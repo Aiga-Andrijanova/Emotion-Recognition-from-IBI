@@ -2,7 +2,8 @@ from scipy.io import loadmat
 from matplotlib import pyplot as plt
 import numpy as np
 
-PATH = "D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed"
+#PATH = "D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed"
+PATH = "./Data"
 FREQ = 128  # Hz
 DATA = loadmat(PATH + '/Data_Preprocessed_P01.mat')
 LeadII = DATA['joined_data'][0][0][:, 14]
@@ -10,12 +11,6 @@ LeadIII = DATA['joined_data'][0][0][:, 15]
 
 # DATA['joined_data'][0][Video NR. (0-19)][:,14] ECG right arm lead (Lead II) in mV
 # DATA['joined_data'][0][Video NR. (0-19)][:,14] ECG left arm lead (Lead III) in mV
-
-# PATH = "D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Original/Data_Original_P01"
-# FREQ = 256
-# DATA = loadmat(PATH + '/Data_Original_P01.mat')
-# LeadII = DATA['ECG_DATA'][0][0][:, 1]
-# LeadIII = DATA['ECG_DATA'][0][0][:, 2]
 
 ComplexLead = np.zeros(len(LeadII)-2)
 for i in range(0, len(LeadII)-2):
