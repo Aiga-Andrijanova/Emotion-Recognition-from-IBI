@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/AA00755.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data.memmap" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/IBI_Extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_Extractor.py" afterDir="false" />
     </list>
@@ -40,7 +40,7 @@
       <recent name="C:\Users\AA00755\Documents\Python_projects\BachelorsThesis\Data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.memmap_reader">
+  <component name="RunManager" selected="Python.IBI_Extractor">
     <configuration name="IBI_Extractor" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -85,8 +85,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.memmap_reader" />
         <item itemvalue="Python.IBI_Extractor" />
+        <item itemvalue="Python.memmap_reader" />
       </list>
     </recent_temporary>
   </component>
@@ -111,6 +111,7 @@
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -2,27 +2,42 @@ from scipy.io import loadmat
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+import json
 
 MAX_SEQ_LEN = 15
 N = 9750  # ???
 
-MEMMAP_FILE = np.memmap('AMIGOS', dtype='float16', mode='w+', shape=(N, MAX_SEQ_LEN))
+MEMMAP_FILE = np.memmap('data.memmap', dtype='float16', mode='w+', shape=(N, MAX_SEQ_LEN))
 MEMMAP_FILE.flush()
 
 PATH = "D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/"
 FREQ = 128  # Hz
 
-memmap_i = 0
+memmap_row = 0
+
+person_ids = {}
+person_id = 1
+p_start_idx = 0
+p_end_idx = 0
+
+classes = {}
+c_start_idx = 0
+c_end_idx = 0
+
+seq_len = {}
 
 for filename in os.listdir(PATH):
 
     DATA = loadmat(PATH + filename)
 
+    p_start_idx = memmap_row
+
     # There are 20 videos, 0-15 short videos, 16-19 long
-    for video in range(0, 15):
+    for video in range(0, 1):
 
         arousal = DATA['labels_selfassessment'][0][video][0, 0]
         valence = DATA['labels_selfassessment'][0][video][0, 1]
+        c_start_idx = memmap_row
 
         LeadII = DATA['joined_data'][0][video][:, 14]
         LeadIII = DATA['joined_data'][0][video][:, 15]
@@ -58,7 +73,6 @@ for filename in os.listdir(PATH):
             Dist = Dist + ComplexLead[i+1] - ComplexLead[i]
         F = Dist / 0.35  # mean pseudo-spatial velocity for the first 350 ms
 
-        RR_EXPECTED = 0.65  # Normal RR interval = 0.6-1.2 seconds
         R = 0
         RR = np.zeros(5)
 
@@ -109,7 +123,7 @@ for filename in os.listdir(PATH):
                 M_train.append(M)
 
             if len(QRS_list) >= 1:
-                if DetectionTime <= Time <= DetectionTime + 2/3 * RR_EXPECTED:
+                if DetectionTime <= Time <= DetectionTime + 2/3 * np.mean(RR):
                     R = 0
                     R_train.append(R)
                 elif DetectionTime + 2/3 * np.mean(RR) <= Time <= DetectionTime + np.mean(RR):
@@ -150,7 +164,7 @@ for filename in os.listdir(PATH):
             if IBI_sum >= 5:
                 IBI_sum = 0
 
-                MEMMAP_FILE = np.memmap('AMIGOS', dtype='float16', mode='r+', offset=2*(memmap_i * MAX_SEQ_LEN))
+                MEMMAP_FILE = np.memmap('AMIGOS', dtype='float16', mode='r+', offset=2*(memmap_row * MAX_SEQ_LEN))
 
                 j = 0
                 for val in IBI_train:
@@ -159,5 +173,19 @@ for filename in os.listdir(PATH):
 
                 MEMMAP_FILE.flush()
 
-                memmap_i = memmap_i + 1
+                memmap_row = memmap_row + 1
+                seq_len[memmap_row] = len(IBI_train)
                 IBI_train.clear()
+
+        c_end_idx = memmap_row
+        classes['arousal:' + str(c_start_idx) + '-' + str(c_end_idx)] = int(arousal)
+        classes['valence:' + str(c_start_idx) + '-' + str(c_end_idx)] = int(valence)
+
+    p_end_idx = memmap_row
+    person_ids[str(p_start_idx) + '-' + str(p_end_idx)] = int(person_id)
+    person_id = person_id + 1
+
+json_data = [person_ids, classes, seq_len]
+
+with open('data.json', 'w+') as json_file:
+  json.dump(json_data, json_file, indent=4)
