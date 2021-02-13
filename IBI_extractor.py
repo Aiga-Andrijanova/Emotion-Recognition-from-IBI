@@ -19,7 +19,7 @@ valence_list = []
 arousal_list = []
 lenghts = []
 
-memmap_file = np.memmap('Data/BPMdata.memmap', dtype='float16', mode='w+', shape=(1,))
+memmap_file = np.memmap('Data/IBIdata.memmap', dtype='float16', mode='w+', shape=(1,))
 memmap_file.flush()
 memmap_idx = 0
 
@@ -42,38 +42,39 @@ for filename in os.listdir(args.PATH):
             failed = failed + 1
             break
 
-        ts, filtered, rpeaks, templates_ts, templates, heart_rate_ts, heart_rate = ecg.ecg(signal=LeadIII, sampling_rate=args.FREQ, show=False)
+        ts, filtered, rpeaks, templates_ts, templates, heart_rate_ts, heart_rate \
+            = ecg.ecg(signal=LeadIII, sampling_rate=args.FREQ, show=False)
 
         window_count = int((int(np.max(ts)) - args.SLIDING_WINDOW + args.TIMESTEP) / args.TIMESTEP)
 
         window_start_time = 0
-        hr = []
+        ibi = []
         for window in range(0, window_count-1):
-            for idx in range(0, len(heart_rate_ts)):
-                if window_start_time > heart_rate_ts[idx]:
+            for idx in range(0, len(ts[rpeaks])-1):
+                if window_start_time > ts[rpeaks][idx]:
                     continue
-                elif window_start_time <= heart_rate_ts[idx] < window_start_time + args.SLIDING_WINDOW:
-                    hr.append(heart_rate[idx])
+                elif window_start_time <= ts[rpeaks][idx] < window_start_time + args.SLIDING_WINDOW:
+                    ibi.append(ts[rpeaks][idx+1] - ts[rpeaks][idx])
                 else:
                     break
 
-            memmap_file = np.memmap('Data/BPMdata.memmap', dtype='float16', mode='r+', shape=(len(hr),), offset=2 * memmap_idx)
+            memmap_file = np.memmap('Data/IBIdata.memmap', dtype='float16', mode='r+', shape=(len(ibi),), offset=2 * memmap_idx)
 
             j = 0
-            for val in hr:
+            for val in ibi:
                 memmap_file[j] = val
                 j = j + 1
 
             memmap_file.flush()
 
-            memmap_idx = memmap_idx + len(hr)
+            memmap_idx = memmap_idx + len(ibi)
 
             person_id.append(int(person))
             arousal_list.append(float(arousal))
             valence_list.append(float(valence))
-            lenghts.append(int(len(hr)))
+            lenghts.append(int(len(ibi)))
 
-            hr.clear()
+            ibi.clear()
 
             window_start_time = window_start_time + args.TIMESTEP
 
@@ -85,7 +86,7 @@ json_dict["arousal"] = arousal_list
 json_dict["valence"] = valence_list
 json_dict["lenghts"] = lenghts
 
-with open('Data/BPMdata.json', 'w+') as json_file:
+with open('Data/IBIdata.json', 'w+') as json_file:
     json.dump(json_dict, json_file, indent=4)
 
 print(f'{failed} videos have nan in ecg readings')
