@@ -4,9 +4,7 @@
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BPM_extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPM_extractor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IBI_Extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.json" beforeDir="false" afterPath="$PROJECT_DIR$/Data/data.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data.memmap" beforeDir="false" afterPath="$PROJECT_DIR$/Data/data.memmap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/IBI_extractor.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,7 +42,7 @@
       <recent name="C:\Users\AA00755\Documents\Python_projects\BachelorsThesis\Data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.BPM_extractor">
+  <component name="RunManager" selected="Python.IBI_extractor (1)">
     <configuration name="BPM_extractor" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -131,9 +129,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.IBI_extractor (1)" />
         <item itemvalue="Python.BPM_extractor" />
         <item itemvalue="Python.memmap_reader" />
-        <item itemvalue="Python.IBI_extractor (1)" />
         <item itemvalue="Python.IBI_extractor" />
       </list>
     </recent_temporary>
@@ -168,11 +166,6 @@
           <url>file://$PROJECT_DIR$/memmap_reader.py</url>
           <line>2</line>
           <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/IBI_extractor.py</url>
-          <line>47</line>
-          <option name="timeStamp" value="5" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
