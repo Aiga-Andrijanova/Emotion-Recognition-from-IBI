@@ -10,10 +10,11 @@ import argparse
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
 parser.add_argument('-JSON_PATH', default=f'Data/AllIBIdata.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'Data/AllIBIdata.memmap', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'Data/AllIBIdata.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
 parser.add_argument('-SLIDING_WINDOW', default=10, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
+parser.add_argument('-MAX_SEQ_LEN', default=34, type=int)  # 200 beats per min results in 33.33 beats in 10 seconds
 args, other_args = parser.parse_known_args()
 
 person_id = []
@@ -34,8 +35,8 @@ for filename in os.listdir(args.DATA_PATH):
     # There are 20 videos, 0-15 short videos, 16-19 long
     for video in tqdm(range(0, 15)):
 
-        arousal = DATA['labels_selfassessment'][0][video][0, 0]
-        valence = DATA['labels_selfassessment'][0][video][0, 1]
+        arousal = int(round(DATA['labels_selfassessment'][0][video][0, 0], 0))  # converting to 9 classes
+        valence = int(round(DATA['labels_selfassessment'][0][video][0, 1], 0))  # converting to 9 classes
 
         LeadII = DATA['joined_data'][0][video][:, 14]
         LeadIII = DATA['joined_data'][0][video][:, 15]
@@ -61,20 +62,28 @@ for filename in os.listdir(args.DATA_PATH):
                     break
 
             memmap_file = np.memmap(args.MEMMAP_PATH, dtype='float16',
-                                    mode='r+', shape=(len(ibi),), offset=2 * memmap_idx)
+                                    mode='r+', shape=(args.MAX_SEQ_LEN,), offset=2 * memmap_idx)
 
             j = 0
             for val in ibi:
                 memmap_file[j] = val
                 j = j + 1
+                if j-1 > args.MAX_SEQ_LEN:
+                    print(f'Max sequence lenght exceeded in person {person}, video {video}, window {window}')
+                    break
+
+            if len(ibi) < args.MAX_SEQ_LEN:  # Creating padding
+                for i in range(0, args.MAX_SEQ_LEN-len(ibi)):
+                    memmap_file[j] = 0
+                    j = j + 1
 
             memmap_file.flush()
 
-            memmap_idx = memmap_idx + len(ibi)
+            memmap_idx = memmap_idx + args.MAX_SEQ_LEN
 
             person_id.append(int(person))
-            arousal_list.append(float(arousal))
-            valence_list.append(float(valence))
+            arousal_list.append(int(arousal))
+            valence_list.append(int(valence))
             lenghts.append(int(len(ibi)))
 
             ibi.clear()
@@ -84,10 +93,11 @@ for filename in os.listdir(args.DATA_PATH):
     person = person + 1
 
 json_dict = dict()
+json_dict["shape"] = [len(lenghts), args.MAX_SEQ_LEN]
 json_dict["person_id"] = person_id
 json_dict["arousal"] = arousal_list
 json_dict["valence"] = valence_list
-json_dict["lenghts"] = lenghts
+json_dict["lengths"] = lenghts
 
 with open(args.JSON_PATH, 'w+') as json_file:
     json.dump(json_dict, json_file, indent=4)
