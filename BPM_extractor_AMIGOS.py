@@ -9,12 +9,12 @@ import argparse
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
-parser.add_argument('-JSON_PATH', default=f'Data/AllIBIdata.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'Data/AllIBIdata.mmap', type=str)
+parser.add_argument('-JSON_PATH', default=f'Data/AllBPMdata.json', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'Data/AllBPMdata.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
 parser.add_argument('-SLIDING_WINDOW', default=10, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
-parser.add_argument('-MAX_SEQ_LEN', default=34, type=int)  # 200 beats per min results in 33.33 beats in 10 seconds
+parser.add_argument('-MAX_SEQ_LEN', default=21, type=int)
 args, other_args = parser.parse_known_args()
 
 person_id = []
@@ -45,19 +45,19 @@ for filename in os.listdir(args.DATA_PATH):
             failed = failed + 1
             continue
 
-        ts, filtered, rpeaks, templates_ts, templates, heart_rate_ts, heart_rate \
-            = ecg.ecg(signal=LeadIII, sampling_rate=args.FREQ, show=False)
+        ts, filtered, rpeaks, templates_ts, templates, heart_rate_ts, heart_rate = \
+            ecg.ecg(signal=LeadIII, sampling_rate=args.FREQ, show=False)
 
         window_count = int((int(np.max(ts)) - args.SLIDING_WINDOW + args.TIMESTEP) / args.TIMESTEP)
 
         window_start_time = 0
-        ibi = []
+        hr = []
         for window in range(0, window_count-1):
-            for idx in range(0, len(ts[rpeaks])-1):
-                if window_start_time > ts[rpeaks][idx]:
+            for idx in range(0, len(heart_rate_ts)):
+                if window_start_time > heart_rate_ts[idx]:
                     continue
-                elif window_start_time <= ts[rpeaks][idx] < window_start_time + args.SLIDING_WINDOW:
-                    ibi.append(ts[rpeaks][idx+1] - ts[rpeaks][idx])
+                elif window_start_time <= heart_rate_ts[idx] < window_start_time + args.SLIDING_WINDOW:
+                    hr.append(heart_rate[idx])
                 else:
                     break
 
@@ -65,15 +65,15 @@ for filename in os.listdir(args.DATA_PATH):
                                     mode='r+', shape=(args.MAX_SEQ_LEN,), offset=2 * memmap_idx)
 
             j = 0
-            for val in ibi:
+            for val in hr:
                 memmap_file[j] = val
                 j = j + 1
                 if j-1 > args.MAX_SEQ_LEN:
                     print(f'Max sequence lenght exceeded in person {person}, video {video}, window {window}')
                     break
 
-            if len(ibi) < args.MAX_SEQ_LEN:  # Creating padding
-                for i in range(0, args.MAX_SEQ_LEN-len(ibi)):
+            if len(hr) < args.MAX_SEQ_LEN:  # Creating padding
+                for i in range(0, args.MAX_SEQ_LEN-len(hr)):
                     memmap_file[j] = 0
                     j = j + 1
 
@@ -82,11 +82,11 @@ for filename in os.listdir(args.DATA_PATH):
             memmap_idx = memmap_idx + args.MAX_SEQ_LEN
 
             person_id.append(int(person))
-            arousal_list.append(int(arousal))
-            valence_list.append(int(valence))
-            lenghts.append(int(len(ibi)))
+            arousal_list.append(float(arousal))
+            valence_list.append(float(valence))
+            lenghts.append(int(len(hr)))
 
-            ibi.clear()
+            hr.clear()
 
             window_start_time = window_start_time + args.TIMESTEP
 
@@ -103,3 +103,4 @@ with open(args.JSON_PATH, 'w+') as json_file:
     json.dump(json_dict, json_file, indent=4)
 
 print(f'{failed} videos have nan in ecg readings')
+print(f'{max(lenghts)} is the longes seq')
