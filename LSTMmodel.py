@@ -4,10 +4,11 @@ import torch
 import torch.utils.data
 import argparse
 import tqdm
+import torch.nn.functional as F
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pack_sequence
 
 parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument('-embedding_size', default=25, type=int)
+parser.add_argument('-embedding_size', default=1, type=int)
 parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
 args, other_args = parser.parse_known_args()
@@ -107,29 +108,23 @@ class LSTM(torch.nn.Module):
         self.args = args
 
         self.rnn = torch.nn.LSTM(
-            input_size=args.embedding_size,
-            hidden_size=args.embedding_size,
+            input_size=1,
+            hidden_size=1,
             num_layers=args.rnn_layers,
             dropout=args.rnn_dropout,
             batch_first=True
         )
 
+        self.linear = torch.nn.Linear(in_features=1, out_features=9)
+
     def forward(self, x: PackedSequence, hx=None):
 
-        out_seq, (hn, cn) = self.rnn.forward(x, hx)
-        ret = torch.matmul(out_seq.data, self.embedding.weight.t())
-        if isinstance(x, PackedSequence):
-            prob = torch.softmax(ret, dim=1)
-            prob = PackedSequence(
-                prob,
-                x.batch_sizes,
-                x.sorted_indices,
-                x.unsorted_indices
-            )
-        else:
-            prob = torch.softmax(ret, dim=2)
+        out, (ht, ct) = self.rnn.forward(x, hx)
+        #PackedSequence -> Tensor
+        out = self.linear(out)
+        out = F.log_softmax(out)
+        return out
 
-        return prob, (hn, cn)
 
 model = LSTM(args)
 loss_func = torch.nn.CrossEntropyLoss()
@@ -155,7 +150,7 @@ for epoch in range(10):
 
             model.zero_grad()
 
-            padded_packed = pack_padded_sequence(x.squeeze(2), lengths, batch_first=True)
+            padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
             y_prim = model.forward(padded_packed)
             loss = loss_func.forward(y_prim, y)
 
@@ -165,8 +160,8 @@ for epoch in range(10):
                 optimizer.zero_grad()
 
             else:
-                hidden = model.init_hidden(t_ibi.size(0))
-                y_prim, hidden = model.forward(t_ibi, hidden)
+                hidden = model.init_hidden(x.size(0))
+                y_prim, hidden = model.forward(x, hidden)
                 for _ in range(5):
                     input = y_prim[:, -1].unsqueeze(-1)
                     y_prim_step, hidden = model.forward(input, hidden)
@@ -181,7 +176,7 @@ for epoch in range(10):
             if stage in key:
                 value = np.mean(metrics_epoch[key])
                 metrics[key] = value
-                metrics_strs.append(f'{key}: {round(value, 2)}')
+                metrics_strs.append(f'{key}: {round(value,2)}')
 
         print(f'epoch: {epoch} {" ".join(metrics_strs)}')
 
