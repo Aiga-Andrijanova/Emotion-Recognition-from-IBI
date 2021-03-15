@@ -4,10 +4,10 @@ import torch
 import torch.utils.data
 import argparse
 import tqdm
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pack_sequence
 
 parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument('-embedding_size', default=10, type=int)
+parser.add_argument('-embedding_size', default=25, type=int)
 parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
 args, other_args = parser.parse_known_args()
@@ -48,8 +48,8 @@ class DatasetIBI(torch.utils.data.Dataset):
         t_ibi = torch.FloatTensor(ibi)
         t_length = torch.IntTensor([length])
         t_arousal = torch.IntTensor([arousal])
-        t_valance = torch.IntTensor([valance])
-        return t_ibi, t_length, t_arousal, t_valance
+        # t_valance = torch.IntTensor([valance])
+        return t_ibi, t_length, t_arousal
 
 
 torch.manual_seed(0)  # lock seed
@@ -62,17 +62,28 @@ torch.seed()  # init random seed
 
 def collate_fn(batch):
 
-    t_ibi = batch[:][0]
-    t_lengths = batch[:][1]
-    t_arousal = batch[:][2]
-    indices = torch.argsort(t_lengths, descending=True)
-    t_ibi = [t_ibi[i] for i in indices]
-    # t_ibi = t_ibi[None, :, :]
-    # t_lengths = t_lengths[None, :]
-    # t_arousal = t_arousal[None, :]
-    # t_valance = t_valance[None, :]
-    # return t_ibi, t_lengths, t_arousal, t_valance
-    return t_ibi, t_arousal, t_lengths  #t_ibi un t_arousal ir tuple, kas sastāv no vairākiem tensoriem
+    t_ibi_batch = torch.zeros([len(batch), 25, 1])
+    t_lengths_batch = torch.Tensor()
+    t_arousal_batch = torch.Tensor()
+
+    i = 0
+    for t_ibi, t_lengths, t_arousal in batch:
+        t_lengths_batch = torch.cat((t_lengths_batch, t_lengths), dim=0)
+        t_arousal_batch = torch.cat((t_arousal_batch, t_arousal), dim=0)
+
+        j = 0
+        for ibi in t_ibi:
+            t_ibi_batch[i][j][0] = ibi
+            j = j + 1
+        # t_ibi_batch[i] = t_ibi
+
+        i = i + 1
+
+    indices = torch.argsort(t_lengths_batch, descending=True)
+    t_lengths_batch = t_lengths_batch[indices]
+    t_ibi_batch = t_ibi_batch[indices]
+
+    return t_ibi_batch, t_arousal_batch, t_lengths_batch
 
 
 dataloader_train = torch.utils.data.DataLoader(
@@ -105,13 +116,6 @@ class LSTM(torch.nn.Module):
 
     def forward(self, x: PackedSequence, hx=None):
 
-        if isinstance(x, PackedSequence):
-            emb = PackedSequence(
-                x.data,
-                x.batch_sizes,
-                x.sorted_indices,
-                x.unsorted_indices
-            )
         out_seq, (hn, cn) = self.rnn.forward(x, hx)
         ret = torch.matmul(out_seq.data, self.embedding.weight.t())
         if isinstance(x, PackedSequence):
@@ -151,8 +155,8 @@ for epoch in range(10):
 
             model.zero_grad()
 
-            padded_packed = pack_padded_sequence(x, lengths)
-            y_prim = model.forward(x)
+            padded_packed = pack_padded_sequence(x.squeeze(2), lengths, batch_first=True)
+            y_prim = model.forward(padded_packed)
             loss = loss_func.forward(y_prim, y)
 
             if data_loader == dataloader_train:
