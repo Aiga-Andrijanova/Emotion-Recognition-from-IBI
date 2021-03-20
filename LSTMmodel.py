@@ -4,15 +4,18 @@ import torch
 import torch.utils.data
 import argparse
 import tqdm
+from tqdm import trange
 import torch.nn.functional as F
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pack_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
 
 parser = argparse.ArgumentParser(add_help=False)
+parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
+parser.add_argument('-epoch_count', default=10, type=int)
 parser.add_argument('-embedding_size', default=1, type=int)
 parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
+parser.add_argument('-hidden_size', default=16, type=int)
 args, other_args = parser.parse_known_args()
-
 
 class DatasetIBI(torch.utils.data.Dataset):
     def __init__(
@@ -67,22 +70,24 @@ def collate_fn(batch):
     t_lengths_batch = torch.Tensor()
     t_arousal_batch = torch.Tensor()
 
+    unzipped_batch = zip(*batch)
+    unzipped_batch_list = list(unzipped_batch)
+    t_lengths_batch = torch.stack(unzipped_batch_list[1]).squeeze(dim=1)
+    t_arousal_batch = torch.stack(unzipped_batch_list[2]).squeeze(dim=1)
+
     i = 0
     for t_ibi, t_lengths, t_arousal in batch:
-        t_lengths_batch = torch.cat((t_lengths_batch, t_lengths), dim=0)
-        t_arousal_batch = torch.cat((t_arousal_batch, t_arousal), dim=0)
-
-        j = 0
-        for ibi in t_ibi:
-            t_ibi_batch[i][j][0] = ibi
-            j = j + 1
-        # t_ibi_batch[i] = t_ibi
+        t_ibi_batch[i, :, :] = t_ibi.unsqueeze(dim=1)
 
         i = i + 1
+    t_ibi_batch.squeeze(dim=1)
 
     indices = torch.argsort(t_lengths_batch, descending=True)
-    t_lengths_batch = t_lengths_batch[indices]
-    t_ibi_batch = t_ibi_batch[indices]
+    t_lengths_batch = t_lengths_batch[indices]  # (B, )
+    t_ibi_batch = t_ibi_batch[indices]  # (B, Max_seq, F)
+
+    t_arousal_batch = t_arousal_batch[indices].type(torch.LongTensor)  # (B, )
+    t_arousal_batch = torch.add(t_arousal_batch, -1)
 
     return t_ibi_batch, t_arousal_batch, t_lengths_batch
 
@@ -109,26 +114,42 @@ class LSTM(torch.nn.Module):
 
         self.rnn = torch.nn.LSTM(
             input_size=1,
-            hidden_size=1,
+            hidden_size=args.hidden_size,
             num_layers=args.rnn_layers,
             dropout=args.rnn_dropout,
             batch_first=True
         )
 
-        self.linear = torch.nn.Linear(in_features=1, out_features=9)
+        self.linear = torch.nn.Linear(in_features=args.hidden_size, out_features=9)  #TODO: add class count to args
 
     def forward(self, x: PackedSequence, hx=None):
 
-        out, (ht, ct) = self.rnn.forward(x, hx)
-        #PackedSequence -> Tensor
-        out = self.linear(out)
-        out = F.log_softmax(out)
+        packed_rnn_out_data, (_, _) = self.rnn.forward(x)
+        unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
+
+        h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2]))
+        for sample in range(unpacked_rnn_out.size()[0]):
+            h[sample] = torch.mean(unpacked_rnn_out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
+
+        out = self.linear(h)
+        out = F.softmax(out, dim=1)
+
+        # out = self.linear(unpacked_rnn_out)
+        # out = F.softmax(out, dim=1)
+        # h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2]))
+        # for sample in range(unpacked_rnn_out.size()[0]):
+        #     h[sample] = torch.mean(out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
+
         return out
 
 
 model = LSTM(args)
 loss_func = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+if args.is_cuda:
+    model = model.cuda()
+    loss_func = loss_func.cuda()
 
 metrics = {}
 for stage in ['train', 'test']:
@@ -137,7 +158,7 @@ for stage in ['train', 'test']:
     ]:
         metrics[f'{stage}_{metric}'] = 0
 
-for epoch in range(10):
+for epoch in trange(args.epoch_count):
 
     for data_loader in [dataloader_train, dataloader_test]:
         metrics_epoch = {key: [] for key in metrics.keys()}
@@ -151,7 +172,13 @@ for epoch in range(10):
             model.zero_grad()
 
             padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
+
+            if args.is_cuda:
+                x = x.cuda()
+                padded_packed = padded_packed.cuda()
+
             y_prim = model.forward(padded_packed)
+
             loss = loss_func.forward(y_prim, y)
 
             if data_loader == dataloader_train:
@@ -159,26 +186,19 @@ for epoch in range(10):
                 optimizer.step()
                 optimizer.zero_grad()
 
-            else:
-                hidden = model.init_hidden(x.size(0))
-                y_prim, hidden = model.forward(x, hidden)
-                for _ in range(5):
-                    input = y_prim[:, -1].unsqueeze(-1)
-                    y_prim_step, hidden = model.forward(input, hidden)
-                    y_prim = torch.cat([y_prim, y_prim_step], dim=1)
-
             # move all data back to cpu
+            # loss = loss.cpu()
+            # y_prim = y_prim.cpu()
+            # y = y.cpu()
+            # x = x.cpu()
 
-            metrics_epoch[f'{stage}_loss'].append(loss.item()) # Tensor(0.1) => 0.1f
+            metrics_epoch[f'{stage}_loss'].append(loss.item())  # Tensor(0.1) => 0.1f
 
         metrics_strs = []
         for key in metrics_epoch.keys():
             if stage in key:
                 value = np.mean(metrics_epoch[key])
                 metrics[key] = value
-                metrics_strs.append(f'{key}: {round(value,2)}')
+                metrics_strs.append(f'{key}: {round(value, 2)}')
 
         print(f'epoch: {epoch} {" ".join(metrics_strs)}')
-
-# Padodot uz LSTM bus vajadzigs PackedSequence
-#  (https://www.notion.so/evalds/PackedSequence-RNN-5922eaeea48644a2b96fe5e13ef1a185)
