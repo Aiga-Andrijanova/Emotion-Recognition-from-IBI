@@ -15,6 +15,7 @@ parser.add_argument('-embedding_size', default=1, type=int)
 parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
 parser.add_argument('-hidden_size', default=16, type=int)
+parser.add_argument('-class_count', default=9, type=int)
 args, other_args = parser.parse_known_args()
 
 class DatasetIBI(torch.utils.data.Dataset):
@@ -87,7 +88,7 @@ def collate_fn(batch):
     t_ibi_batch = t_ibi_batch[indices]  # (B, Max_seq, F)
 
     t_arousal_batch = t_arousal_batch[indices].type(torch.LongTensor)  # (B, )
-    t_arousal_batch = torch.add(t_arousal_batch, -1)
+    t_arousal_batch = torch.add(t_arousal_batch, -1)  # [1;9] -> [0;8]
 
     return t_ibi_batch, t_arousal_batch, t_lengths_batch
 
@@ -120,9 +121,9 @@ class LSTM(torch.nn.Module):
             batch_first=True
         )
 
-        self.linear = torch.nn.Linear(in_features=args.hidden_size, out_features=9)  #TODO: add class count to args
+        self.linear = torch.nn.Linear(in_features=args.hidden_size, out_features=args.class_count)
 
-    def forward(self, x: PackedSequence, hx=None):
+    def forward(self, x: PackedSequence):
 
         packed_rnn_out_data, (_, _) = self.rnn.forward(x)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
@@ -134,14 +135,14 @@ class LSTM(torch.nn.Module):
         out = self.linear(h)
         out = F.softmax(out, dim=1)
 
-        # out = self.linear(unpacked_rnn_out)
-        # out = F.softmax(out, dim=1)
-        # h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2]))
-        # for sample in range(unpacked_rnn_out.size()[0]):
-        #     h[sample] = torch.mean(out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
+        out = self.linear(unpacked_rnn_out)
+        out = F.softmax(out, dim=1)
 
-        return out
+        h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2]))
+        for sample in range(unpacked_rnn_out.size()[0]):
+            h[sample] = torch.mean(out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
 
+        return h
 
 model = LSTM(args)
 loss_func = torch.nn.CrossEntropyLoss()
