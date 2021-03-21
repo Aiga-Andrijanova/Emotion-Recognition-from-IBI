@@ -5,6 +5,7 @@ import torch.utils.data
 import argparse
 import tqdm
 from tqdm import trange
+from tqdm import tqdm
 import torch.nn.functional as F
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
 
@@ -128,21 +129,14 @@ class LSTM(torch.nn.Module):
         packed_rnn_out_data, (_, _) = self.rnn.forward(x)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
 
-        h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2]))
+        h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2])).cuda()
         for sample in range(unpacked_rnn_out.size()[0]):
             h[sample] = torch.mean(unpacked_rnn_out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
 
         out = self.linear(h)
         out = F.softmax(out, dim=1)
 
-        out = self.linear(unpacked_rnn_out)
-        out = F.softmax(out, dim=1)
-
-        h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2]))
-        for sample in range(unpacked_rnn_out.size()[0]):
-            h[sample] = torch.mean(out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
-
-        return h
+        return out
 
 model = LSTM(args)
 loss_func = torch.nn.CrossEntropyLoss()
@@ -159,7 +153,7 @@ for stage in ['train', 'test']:
     ]:
         metrics[f'{stage}_{metric}'] = 0
 
-for epoch in trange(args.epoch_count):
+for epoch in range(args.epoch_count):
 
     for data_loader in [dataloader_train, dataloader_test]:
         metrics_epoch = {key: [] for key in metrics.keys()}
@@ -168,14 +162,14 @@ for epoch in trange(args.epoch_count):
         if data_loader == dataloader_test:
             stage = 'test'
 
-        for x, y, lengths in data_loader:
+        for x, y, lengths in tqdm(data_loader):
 
             model.zero_grad()
 
             padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
 
             if args.is_cuda:
-                x = x.cuda()
+                y = y.cuda()
                 padded_packed = padded_packed.cuda()
 
             y_prim = model.forward(padded_packed)
