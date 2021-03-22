@@ -17,6 +17,8 @@ parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
 parser.add_argument('-hidden_size', default=16, type=int)
 parser.add_argument('-class_count', default=9, type=int)
+parser.add_argument('-learning_rate', default=0.001, type=float)
+parser.add_argument('-batch_size', default=5, type=int)
 args, other_args = parser.parse_known_args()
 
 class DatasetIBI(torch.utils.data.Dataset):
@@ -69,8 +71,6 @@ torch.seed()  # init random seed
 def collate_fn(batch):
 
     t_ibi_batch = torch.zeros([len(batch), 25, 1])
-    t_lengths_batch = torch.Tensor()
-    t_arousal_batch = torch.Tensor()
 
     unzipped_batch = zip(*batch)
     unzipped_batch_list = list(unzipped_batch)
@@ -85,9 +85,9 @@ def collate_fn(batch):
     t_ibi_batch.squeeze(dim=1)
 
     indices = torch.argsort(t_lengths_batch, descending=True)
-    t_lengths_batch = t_lengths_batch[indices]  # (B, )
-    t_ibi_batch = t_ibi_batch[indices]  # (B, Max_seq, F)
 
+    t_ibi_batch = t_ibi_batch[indices]  # (B, Max_seq, F)
+    t_lengths_batch = t_lengths_batch[indices]  # (B, )
     t_arousal_batch = t_arousal_batch[indices].type(torch.LongTensor)  # (B, )
     t_arousal_batch = torch.add(t_arousal_batch, -1)  # [1;9] -> [0;8]
 
@@ -96,14 +96,14 @@ def collate_fn(batch):
 
 dataloader_train = torch.utils.data.DataLoader(
     dataset_train,
-    batch_size=10,
+    batch_size=args.batch_size,
     collate_fn=collate_fn,
     shuffle=True
 )
 
 dataloader_test = torch.utils.data.DataLoader(
     dataset_test,
-    batch_size=10,
+    batch_size=args.batch_size,
     collate_fn=collate_fn,
     shuffle=False
 )
@@ -129,18 +129,21 @@ class LSTM(torch.nn.Module):
         packed_rnn_out_data, (_, _) = self.rnn.forward(x)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
 
-        h = torch.zeros((unpacked_rnn_out.size()[0], unpacked_rnn_out.size()[2])).cuda()
+        temp_batch_size = unpacked_rnn_out.size()[0]
+        temp_max_seq_len = unpacked_rnn_out.size()[1]
+        temp_hidden_size = unpacked_rnn_out.size()[2]
+
+        h = torch.zeros((temp_batch_size, temp_hidden_size)).cuda()  # (B, F)
         for sample in range(unpacked_rnn_out.size()[0]):
-            h[sample] = torch.mean(unpacked_rnn_out[sample][:unpacked_rnn_out_lenghts[sample]], axis=0)
+            h[sample] = torch.mean(unpacked_rnn_out[sample, :unpacked_rnn_out_lenghts[sample]], axis=0)
 
         out = self.linear(h)
-        out = F.softmax(out, dim=1)
-
+        #out = F.softmax(out, dim=1)
         return out
 
 model = LSTM(args)
 loss_func = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
 if args.is_cuda:
     model = model.cuda()
