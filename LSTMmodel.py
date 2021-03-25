@@ -3,22 +3,22 @@ import numpy as np
 import torch
 import torch.utils.data
 import argparse
-import tqdm
-from tqdm import trange
 from tqdm import tqdm
-import torch.nn.functional as F
+import torch_optimizer as optim
+import matplotlib.pyplot as plt
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
+parser.add_argument('-dataset_path', default='Data/TestIBIdata.json', type=str)
 parser.add_argument('-epoch_count', default=10, type=int)
 parser.add_argument('-embedding_size', default=1, type=int)
 parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
 parser.add_argument('-hidden_size', default=16, type=int)
 parser.add_argument('-class_count', default=9, type=int)
-parser.add_argument('-learning_rate', default=0.001, type=float)
-parser.add_argument('-batch_size', default=5, type=int)
+parser.add_argument('-learning_rate', default=1e-3, type=float)
+parser.add_argument('-batch_size', default=32, type=int)
 args, other_args = parser.parse_known_args()
 
 class DatasetIBI(torch.utils.data.Dataset):
@@ -61,7 +61,7 @@ class DatasetIBI(torch.utils.data.Dataset):
 
 
 torch.manual_seed(0)  # lock seed
-dataset_full = DatasetIBI('Data/AllIBIdata.json')
+dataset_full = DatasetIBI(args.dataset_path)
 dataset_train, dataset_test = torch.utils.data.random_split(
     dataset_full, lengths=[int(len(dataset_full)*0.8), len(dataset_full)-int(len(dataset_full)*0.8)])
 
@@ -70,26 +70,21 @@ torch.seed()  # init random seed
 
 def collate_fn(batch):
 
-    t_ibi_batch = torch.zeros([len(batch), 25, 1])
+    #t_ibi_batch = torch.zeros([len(batch), 25, 1])
 
     unzipped_batch = zip(*batch)
     unzipped_batch_list = list(unzipped_batch)
     t_lengths_batch = torch.stack(unzipped_batch_list[1]).squeeze(dim=1)
     t_arousal_batch = torch.stack(unzipped_batch_list[2]).squeeze(dim=1)
+    t_ibi_batch = torch.stack(unzipped_batch_list[0]).unsqueeze(dim=2)
 
-    i = 0
-    for t_ibi, t_lengths, t_arousal in batch:
-        t_ibi_batch[i, :, :] = t_ibi.unsqueeze(dim=1)
-
-        i = i + 1
-    t_ibi_batch.squeeze(dim=1)
 
     indices = torch.argsort(t_lengths_batch, descending=True)
 
     t_ibi_batch = t_ibi_batch[indices]  # (B, Max_seq, F)
     t_lengths_batch = t_lengths_batch[indices]  # (B, )
     t_arousal_batch = t_arousal_batch[indices].type(torch.LongTensor)  # (B, )
-    t_arousal_batch = torch.add(t_arousal_batch, -1)  # [1;9] -> [0;8]
+    t_arousal_batch -= 1 # [1;9] -> [0;8]
 
     return t_ibi_batch, t_arousal_batch, t_lengths_batch
 
@@ -129,13 +124,16 @@ class LSTM(torch.nn.Module):
         packed_rnn_out_data, (_, _) = self.rnn.forward(x)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
 
-        temp_batch_size = unpacked_rnn_out.size()[0]
-        temp_max_seq_len = unpacked_rnn_out.size()[1]
-        temp_hidden_size = unpacked_rnn_out.size()[2]
+        batch_size = unpacked_rnn_out.size()[0]
+        max_seq_len = unpacked_rnn_out.size()[1]
+        hidden_size = unpacked_rnn_out.size()[2]
 
-        h = torch.zeros((temp_batch_size, temp_hidden_size)).cuda()  # (B, F)
-        for sample in range(unpacked_rnn_out.size()[0]):
-            h[sample] = torch.mean(unpacked_rnn_out[sample, :unpacked_rnn_out_lenghts[sample]], axis=0)
+        h = torch.zeros((batch_size, hidden_size)).cuda()
+        # (B, F)
+        for idx_sample in range(batch_size):
+            len_sample = unpacked_rnn_out_lenghts[idx_sample]
+            h_sample = unpacked_rnn_out[idx_sample, :len_sample]
+            h[idx_sample] = torch.mean(h_sample, axis=0)
 
         out = self.linear(h)
         #out = F.softmax(out, dim=1)
@@ -143,7 +141,7 @@ class LSTM(torch.nn.Module):
 
 model = LSTM(args)
 loss_func = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+optimizer = optim.RAdam(model.parameters(), lr=args.learning_rate)
 
 if args.is_cuda:
     model = model.cuda()
@@ -152,22 +150,22 @@ if args.is_cuda:
 metrics = {}
 for stage in ['train', 'test']:
     for metric in [
-        'loss'
+        'loss',
+        'acc'
     ]:
         metrics[f'{stage}_{metric}'] = 0
 
+metrics_epoch = {key: [] for key in metrics.keys()}
 for epoch in range(args.epoch_count):
 
     for data_loader in [dataloader_train, dataloader_test]:
-        metrics_epoch = {key: [] for key in metrics.keys()}
+        metrics_batch = {key: [] for key in metrics.keys()}
 
         stage = 'train'
         if data_loader == dataloader_test:
             stage = 'test'
 
         for x, y, lengths in tqdm(data_loader):
-
-            model.zero_grad()
 
             padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
 
@@ -186,17 +184,35 @@ for epoch in range(args.epoch_count):
 
             # move all data back to cpu
             # loss = loss.cpu()
-            # y_prim = y_prim.cpu()
-            # y = y.cpu()
             # x = x.cpu()
+            y_prim = y_prim.cpu()
+            y = y.cpu()
 
-            metrics_epoch[f'{stage}_loss'].append(loss.item())  # Tensor(0.1) => 0.1f
+            values, indices = torch.max(y_prim, dim=1)
+            sum = 0
+            for i in range(indices.__len__()):
+                if indices[i] == y[i]:
+                    sum += 1
+            acc = float(sum) / float(indices.__len__())
+
+            metrics_batch[f'{stage}_loss'].append(loss.item())  # Tensor(0.1) => 0.1f
+            metrics_batch[f'{stage}_acc'].append(acc)
 
         metrics_strs = []
-        for key in metrics_epoch.keys():
+        for key in metrics_batch.keys():
             if stage in key:
-                value = np.mean(metrics_epoch[key])
-                metrics[key] = value
+                value = np.mean(metrics_batch[key])
+                metrics_epoch[key].append(value)
                 metrics_strs.append(f'{key}: {round(value, 2)}')
 
         print(f'epoch: {epoch} {" ".join(metrics_strs)}')
+
+    plt1 = plt.plot(metrics_epoch['train_loss'], '-b', label='train loss')
+    plt2 = plt.plot(metrics_epoch['train_acc'], '--r', label='train acc')
+    plt3 = plt.plot(metrics_epoch['test_loss'], '-.c', label='test loss')
+    plt4 = plt.plot(metrics_epoch['train_acc'], '-m', label='test acc')
+
+    plts = plt1 + plt2 + plt3 + plt4
+    plt.legend(plts, [it.get_label() for it in plts])
+    plt.draw()
+    plt.pause(0.1)

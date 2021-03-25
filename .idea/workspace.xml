@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/LSTMmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/LSTMmodel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -30,7 +31,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Ievads dziļajā mašīnapmācībā" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
@@ -150,9 +151,9 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.LSTMmodel" />
+        <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
         <item itemvalue="Python.memmap_reader" />
         <item itemvalue="Python.BPM_extractor_AMIGOS (1)" />
-        <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
         <item itemvalue="Python.IBI_extractor_AMIGOS" />
       </list>
     </recent_temporary>
@@ -182,13 +183,6 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/LSTMmodel.py</url>
-          <line>93</line>
-          <option name="timeStamp" value="10" />
-        </line-breakpoint>
-      </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
           <properties notifyOnTerminate="true" exception="BaseException">
@@ -199,7 +193,17 @@
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
-        <watch expression="unzipped_batch" />
+        <watch expression="lengths.sum()" language="Python" />
+        <watch expression="padded_packed.data.size()" language="Python" />
+        <watch expression="packed_rnn_out_data.data.size()" language="Python" />
+        <watch expression="unpacked_rnn_out_lenghts" language="Python" />
+        <watch expression="unpacked_rnn_out[idx_sample, len_sample:]" language="Python" />
+        <watch expression="y_prim[0]" language="Python" />
+        <watch expression="y" language="Python" />
+        <watch expression="x.size()" language="Python" />
+        <watch expression="metrics_epoch[f'{stage}_loss']" language="Python" />
+        <watch expression="h_sample.size()" language="Python" />
+        <watch expression="torch.mean(h_sample, axis=0).size()" language="Python" />
       </configuration>
     </watches-manager>
   </component>

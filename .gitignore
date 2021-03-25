@@ -1,3 +1,6 @@
 
 memmap_reader.py
-/Data/
+/Data/AllBPMdata.json
+/Data/AllBPMdata.mmap
+/Data/AllIBIdata.json
+/Data/AllIBIdata.mmap
