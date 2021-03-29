@@ -111,7 +111,6 @@ def collate_fn(batch):
     t_ibi_batch = t_ibi_batch[indices]  # (B, Max_seq, F)
     t_lengths_batch = t_lengths_batch[indices]  # (B, )
     t_arousal_batch = t_arousal_batch[indices].type(torch.LongTensor)  # (B, )
-    t_arousal_batch -= 1 # [1;9] -> [0;8]
 
     return t_ibi_batch, t_arousal_batch, t_lengths_batch
 
@@ -271,13 +270,13 @@ for epoch in range(args.epoch_count):
     metric_before[args.early_stopping_param] = metrics_epoch[args.early_stopping_param][-1]
     metric_mean[args.early_stopping_param] = np.mean(metrics_epoch[args.early_stopping_param])
 
-    state['train_loss'] = metrics_epoch['train_loss']
-    state['test_loss'] = metrics_epoch['test_loss']
+    state['train_loss'] = metrics_epoch['train_loss'][-1]
+    state['test_loss'] = metrics_epoch['test_loss'][-1]
     state['epoch'] = epoch
     if epoch == 0:
-        state['best_loss'] = metrics_epoch['test_loss']
+        state['best_loss'] = metrics_epoch['test_loss'][-1]
     elif state['test_loss'] < state['best_loss']:
-        state['best_loss'] = metrics_epoch['test_loss']
+        state['best_loss'] = metrics_epoch['test_loss'][-1]
 
     CsvUtils2.add_hparams(
         path_sequence=path_sequence,

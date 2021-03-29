@@ -35,8 +35,9 @@ for filename in os.listdir(args.DATA_PATH):
     # There are 20 videos, 0-15 short videos, 16-19 long
     for video in tqdm(range(0, 15)):
 
-        arousal = int(round(DATA['labels_selfassessment'][0][video][0, 0], 0))  # converting to 9 classes
-        valence = int(round(DATA['labels_selfassessment'][0][video][0, 1], 0))  # converting to 9 classes
+        # converting to 9 classes and [1;9] -> [0;8]
+        arousal = int(round(DATA['labels_selfassessment'][0][video][0, 0], 0)) - 1
+        valence = int(round(DATA['labels_selfassessment'][0][video][0, 1], 0)) - 1
 
         LeadII = DATA['joined_data'][0][video][:, 14]
         LeadIII = DATA['joined_data'][0][video][:, 15]
