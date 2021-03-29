@@ -45,7 +45,7 @@ FileUtils.createDir(path_run)
 FileUtils.createDir(path_artificats)
 FileUtils.writeJSON(f'{path_run}/args.json', args.__dict__)
 
-CsvUtils2.create_global(path_sequence)  # Code freezes 
+CsvUtils2.create_global(path_sequence)
 CsvUtils2.create_local(path_sequence, args.run_name)
 
 class DatasetIBI(torch.utils.data.Dataset):

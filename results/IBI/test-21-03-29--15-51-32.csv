@@ -1,0 +1,6 @@
+step,sequence_name,run_name,is_cuda,dataset_path,class_count,epoch_count,learning_rate,batch_size,embedding_size,rnn_layers,rnn_dropout,hidden_size,early_stopping_patience,early_stopping_param,early_stopping_delta_percent,early_stopping_param_coef,epoch
+0,IBI,test-21-03-29--15-51-32,True,Data/TestIBIdata.json,9,5,0.001,32,1,32,0.3,16,5,test_loss,0.001,-1.0,0
+1,IBI,test-21-03-29--15-51-32,True,Data/TestIBIdata.json,9,5,0.001,32,1,32,0.3,16,5,test_loss,0.001,-1.0,1
+2,IBI,test-21-03-29--15-51-32,True,Data/TestIBIdata.json,9,5,0.001,32,1,32,0.3,16,5,test_loss,0.001,-1.0,2
+3,IBI,test-21-03-29--15-51-32,True,Data/TestIBIdata.json,9,5,0.001,32,1,32,0.3,16,5,test_loss,0.001,-1.0,3
+4,IBI,test-21-03-29--15-51-32,True,Data/TestIBIdata.json,9,5,0.001,32,1,32,0.3,16,5,test_loss,0.001,-1.0,4
