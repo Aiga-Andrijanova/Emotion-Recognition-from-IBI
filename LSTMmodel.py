@@ -7,19 +7,46 @@ from tqdm import tqdm
 import torch_optimizer as optim
 import matplotlib.pyplot as plt
 from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
+from modules.file_utils import FileUtils
+from modules.csv_utils_2 import CsvUtils2
+from datetime import datetime
 
 parser = argparse.ArgumentParser(add_help=False)
+
+parser.add_argument('-sequence_name', default='IBI', type=str)
+parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-dataset_path', default='Data/TestIBIdata.json', type=str)
-parser.add_argument('-epoch_count', default=10, type=int)
+parser.add_argument('-class_count', default=9, type=int)
+
+# Training parameters
+parser.add_argument('-epoch_count', default=5, type=int)
+parser.add_argument('-learning_rate', default=1e-3, type=float)
+parser.add_argument('-batch_size', default=32, type=int)
+
+# Model parameters
 parser.add_argument('-embedding_size', default=1, type=int)
 parser.add_argument('-rnn_layers', default=32, type=int)
 parser.add_argument('-rnn_dropout', default=0.3, type=int)
 parser.add_argument('-hidden_size', default=16, type=int)
-parser.add_argument('-class_count', default=9, type=int)
-parser.add_argument('-learning_rate', default=1e-3, type=float)
-parser.add_argument('-batch_size', default=32, type=int)
+
+parser.add_argument('-early_stopping_patience', default=5, type=int)
+parser.add_argument('-early_stopping_param', default='test_loss', type=str)
+parser.add_argument('-early_stopping_delta_percent', default=1e-3, type=float)
+parser.add_argument('-early_stopping_param_coef', default=-1.0, type=float)
+
 args, other_args = parser.parse_known_args()
+
+path_sequence = f'./results/{args.sequence_name}'
+args.run_name += ('-' + datetime.utcnow().strftime(f'%y-%m-%d--%H-%M-%S'))
+path_run = f'./results/{args.sequence_name}/{args.run_name}'
+path_artificats = f'./artifacts/{args.sequence_name}/{args.run_name}'
+FileUtils.createDir(path_run)
+FileUtils.createDir(path_artificats)
+FileUtils.writeJSON(f'{path_run}/args.json', args.__dict__)
+
+CsvUtils2.create_global(path_sequence)  # Code freezes 
+CsvUtils2.create_local(path_sequence, args.run_name)
 
 class DatasetIBI(torch.utils.data.Dataset):
     def __init__(
@@ -136,7 +163,6 @@ class LSTM(torch.nn.Module):
             h[idx_sample] = torch.mean(h_sample, axis=0)
 
         out = self.linear(h)
-        #out = F.softmax(out, dim=1)
         return out
 
 model = LSTM(args)
@@ -155,8 +181,43 @@ for stage in ['train', 'test']:
     ]:
         metrics[f'{stage}_{metric}'] = 0
 
+metric_before = {}
+metric_mean = {}
+early_stopping_patience = 0
+
+state = {
+    'epoch':0,
+    'train_loss': -1.0,
+    'test_loss': -1.0,
+    'best_loss': -1.0
+}
+
 metrics_epoch = {key: [] for key in metrics.keys()}
 for epoch in range(args.epoch_count):
+
+    percent_improvement = 0
+
+    # Early stpping
+    if epoch > 1:
+        if metric_before[args.early_stopping_param] != 0:
+            if np.isnan(metric_mean[args.early_stopping_param]) or np.isinf(metric_mean[args.early_stopping_param]):
+                print('loss isnan break')
+                break
+
+            percent_improvement = args.early_stopping_param_coef * (
+                        metric_mean[args.early_stopping_param] - metric_before[args.early_stopping_param]) / \
+                                  metric_before[args.early_stopping_param]
+            if np.isnan(percent_improvement):
+                percent_improvement = 0
+
+            if metric_mean[args.early_stopping_param] >= 0:
+                if args.early_stopping_delta_percent > percent_improvement:
+                    early_stopping_patience += 1
+                else:
+                    early_stopping_patience = 0
+        if early_stopping_patience > args.early_stopping_patience:
+            print('early_stopping_patience break')
+            break
 
     for data_loader in [dataloader_train, dataloader_test]:
         metrics_batch = {key: [] for key in metrics.keys()}
@@ -206,6 +267,25 @@ for epoch in range(args.epoch_count):
                 metrics_strs.append(f'{key}: {round(value, 2)}')
 
         print(f'epoch: {epoch} {" ".join(metrics_strs)}')
+
+    metric_before[args.early_stopping_param] = metrics_epoch[args.early_stopping_param][-1]
+    metric_mean[args.early_stopping_param] = np.mean(metrics_epoch[args.early_stopping_param])
+
+    state['train_loss'] = metrics_epoch['train_loss']
+    state['test_loss'] = metrics_epoch['test_loss']
+    state['epoch'] = epoch
+    if epoch == 0:
+        state['best_loss'] = metrics_epoch['test_loss']
+    elif state['test_loss'] < state['best_loss']:
+        state['best_loss'] = metrics_epoch['test_loss']
+
+    CsvUtils2.add_hparams(
+        path_sequence=path_sequence,
+        run_name=args.run_name,
+        args_dict=args.__dict__,
+        metrics_dict=state,
+        global_step=epoch
+    )
 
     plt1 = plt.plot(metrics_epoch['train_loss'], '-b', label='train loss')
     plt2 = plt.plot(metrics_epoch['train_acc'], '--r', label='train acc')
