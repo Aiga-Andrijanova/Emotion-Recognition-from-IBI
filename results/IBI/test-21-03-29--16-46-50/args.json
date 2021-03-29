@@ -1,6 +1,6 @@
 {
     "sequence_name": "IBI",
-    "run_name": "test-21-03-29--15-51-32",
+    "run_name": "test-21-03-29--16-46-50",
     "is_cuda": true,
     "dataset_path": "Data/TestIBIdata.json",
     "class_count": 9,

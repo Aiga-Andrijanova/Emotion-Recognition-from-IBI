@@ -3,10 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPM_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPM_extractor_AMIGOS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/TestIBIdata.json" beforeDir="false" afterPath="$PROJECT_DIR$/Data/TestIBIdata.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSTMmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/LSTMmodel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-42-00/args.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-49-06/args.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-51-32.csv" beforeDir="false" />
