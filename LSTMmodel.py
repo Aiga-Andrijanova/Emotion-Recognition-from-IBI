@@ -13,14 +13,14 @@ from datetime import datetime
 
 parser = argparse.ArgumentParser(add_help=False)
 
-parser.add_argument('-sequence_name', default='IBI', type=str)
+parser.add_argument('-sequence_name', default='IBI_2', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='Data/TestIBIdata.json', type=str)
+parser.add_argument('-dataset_path', default='Data/AllIBIdata.json', type=str)
 parser.add_argument('-class_count', default=9, type=int)
 
 # Training parameters
-parser.add_argument('-epoch_count', default=5, type=int)
+parser.add_argument('-epoch_count', default=10, type=int)
 parser.add_argument('-learning_rate', default=1e-3, type=float)
 parser.add_argument('-batch_size', default=32, type=int)
 
@@ -31,8 +31,8 @@ parser.add_argument('-rnn_dropout', default=0.3, type=int)
 parser.add_argument('-hidden_size', default=16, type=int)
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
-parser.add_argument('-early_stopping_param', default='test_loss', type=str)
-parser.add_argument('-early_stopping_delta_percent', default=1e-3, type=float)
+parser.add_argument('-early_stopping_param', default='train_loss', type=str)
+parser.add_argument('-early_stopping_delta_percent', default=1e-4, type=float)
 parser.add_argument('-early_stopping_param_coef', default=-1.0, type=float)
 
 args, other_args = parser.parse_known_args()
@@ -185,10 +185,12 @@ metric_mean = {}
 early_stopping_patience = 0
 
 state = {
-    'epoch':0,
+    'epoch': 0,
     'train_loss': -1.0,
     'test_loss': -1.0,
-    'best_loss': -1.0
+    'best_loss': -1.0,
+    'train_acc': -1.0,
+    'test_acc': -1.0
 }
 
 metrics_epoch = {key: [] for key in metrics.keys()}
@@ -272,11 +274,16 @@ for epoch in range(args.epoch_count):
 
     state['train_loss'] = metrics_epoch['train_loss'][-1]
     state['test_loss'] = metrics_epoch['test_loss'][-1]
+    state['train_acc'] = metrics_epoch['train_acc'][-1]
+    state['test_acc'] = metrics_epoch['test_acc'][-1]
     state['epoch'] = epoch
     if epoch == 0:
         state['best_loss'] = metrics_epoch['test_loss'][-1]
-    elif state['test_loss'] < state['best_loss']:
+        state['best_acc'] = metrics_epoch['test_acc'][-1]
+    if state['test_loss'] < state['best_loss']:
         state['best_loss'] = metrics_epoch['test_loss'][-1]
+    if state['test_acc'] < state['best_acc']:
+        state['best_acc'] = metrics_epoch['test_acc'][-1]
 
     CsvUtils2.add_hparams(
         path_sequence=path_sequence,
@@ -295,3 +302,4 @@ for epoch in range(args.epoch_count):
     plt.legend(plts, [it.get_label() for it in plts])
     plt.draw()
     plt.pause(0.1)
+

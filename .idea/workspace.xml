@@ -2,11 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/csv-plugin.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-42-00/args.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-49-06/args.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-51-32.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--15-51-32/args.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LSTMmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/LSTMmodel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/IBI/sequence-IBI.csv" beforeDir="false" afterPath="$PROJECT_DIR$/results/IBI/sequence-IBI.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,8 +33,8 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Ievads dziļajā mašīnapmācībā" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Advanced-AI-models-using-PyTorch" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -154,8 +154,8 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.LSTMmodel" />
-        <item itemvalue="Python.csv_utils_2" />
         <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
+        <item itemvalue="Python.csv_utils_2" />
         <item itemvalue="Python.memmap_reader" />
         <item itemvalue="Python.BPM_extractor_AMIGOS (1)" />
       </list>
