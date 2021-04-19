@@ -17,7 +17,6 @@ parser.add_argument('-sequence_name', default='IBI_2', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
 parser.add_argument('-dataset_path', default='Data/AllIBIdata.json', type=str)
-parser.add_argument('-class_count', default=9, type=int)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=10, type=int)
@@ -26,8 +25,8 @@ parser.add_argument('-batch_size', default=32, type=int)
 
 # Model parameters
 parser.add_argument('-embedding_size', default=1, type=int)
-parser.add_argument('-rnn_layers', default=32, type=int)
-parser.add_argument('-rnn_dropout', default=0.3, type=int)
+parser.add_argument('-rnn_layers', default=1, type=int)  # 1 - 3
+parser.add_argument('-rnn_dropout', default=0, type=int)
 parser.add_argument('-hidden_size', default=16, type=int)
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
@@ -44,6 +43,13 @@ path_artificats = f'./artifacts/{args.sequence_name}/{args.run_name}'
 FileUtils.createDir(path_run)
 FileUtils.createDir(path_artificats)
 FileUtils.writeJSON(f'{path_run}/args.json', args.__dict__)
+
+with open(args.dataset_path) as fp:
+    data_json = json.load(fp)
+CLASS_COUNT = data_json['class_count']
+AROUSAL_WEIGHTS = torch.FloatTensor(data_json['arousal_weights'])
+VALENCE_WEIGHTS = torch.FloatTensor(data_json['valence_weights'])
+del data_json
 
 CsvUtils2.create_global(path_sequence)
 CsvUtils2.create_local(path_sequence, args.run_name)
@@ -143,7 +149,7 @@ class LSTM(torch.nn.Module):
             batch_first=True
         )
 
-        self.linear = torch.nn.Linear(in_features=args.hidden_size, out_features=args.class_count)
+        self.linear = torch.nn.Linear(in_features=args.hidden_size, out_features=CLASS_COUNT)
 
     def forward(self, x: PackedSequence):
 
@@ -165,7 +171,7 @@ class LSTM(torch.nn.Module):
         return out
 
 model = LSTM(args)
-loss_func = torch.nn.CrossEntropyLoss()
+loss_func = torch.nn.CrossEntropyLoss(weight=AROUSAL_WEIGHTS)
 optimizer = optim.RAdam(model.parameters(), lr=args.learning_rate)
 
 if args.is_cuda:
