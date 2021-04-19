@@ -9,12 +9,12 @@ from collections import Counter
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
-parser.add_argument('-JSON_PATH', default=f'Data/AllIBIdata.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'Data/AllIBIdata.mmap', type=str)
+parser.add_argument('-JSON_PATH', default=f'data/IBI_AMIGOS_30sec.json', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'data/IBI_AMIGOS_30sec.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
-parser.add_argument('-SLIDING_WINDOW', default=10, type=int)
+parser.add_argument('-SLIDING_WINDOW', default=30, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
-parser.add_argument('-MAX_SEQ_LEN', default=25, type=int)  # 200 beats per min results in 33.33 beats in 10 seconds
+parser.add_argument('-MAX_SEQ_LEN', default=61, type=int)  # 200 beats per min results in 33.33 beats in 10 seconds
 args, other_args = parser.parse_known_args()
 
 person_id = []

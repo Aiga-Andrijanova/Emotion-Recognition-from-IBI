@@ -1,7 +1,3 @@
-
-ViewMemmap.py.py
-/Data/AllBPMdata.json
-/Data/AllBPMdata.mmap
-/Data/AllIBIdata.json
-/Data/AllIBIdata.mmap
+ViewMemmap.py
+/data
 /results

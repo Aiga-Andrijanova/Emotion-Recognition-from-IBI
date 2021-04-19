@@ -2,16 +2,18 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Histograms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/BachelorsThesis.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/BachelorsThesis.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BPM_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/BPM_extractor_AMIGOS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/TestIBIdata.json" beforeDir="false" afterPath="$PROJECT_DIR$/Data/TestIBIdata.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Data/TestIBIdata.mmap" beforeDir="false" afterPath="$PROJECT_DIR$/Data/TestIBIdata.mmap" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/TestIBIdata.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Data/TestIBIdata.mmap" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Histograms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Histograms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/LSTMmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/LSTMmodel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ViewMemmap.py" beforeDir="false" afterPath="$PROJECT_DIR$/ViewMemmap.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/IBI/sequence-IBI.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--16-46-50.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/IBI/test-21-03-29--16-46-50/args.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,7 +52,7 @@
       <recent name="C:\Users\AA00755\Documents\Python_projects\BachelorsThesis\Data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.BPM_extractor_AMIGOS">
+  <component name="RunManager" selected="Python.Histograms">
     <configuration name="BPM_extractor_AMIGOS" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -158,11 +160,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.BPM_extractor_AMIGOS" />
-        <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
-        <item itemvalue="Python.ViewMemmap" />
-        <item itemvalue="Python.LSTMmodel" />
         <item itemvalue="Python.Histograms" />
+        <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
+        <item itemvalue="Python.LSTMmodel" />
+        <item itemvalue="Python.BPM_extractor_AMIGOS" />
+        <item itemvalue="Python.ViewMemmap" />
       </list>
     </recent_temporary>
   </component>
@@ -193,29 +195,19 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/modules/csv_utils_2.py</url>
-          <line>32</line>
-          <option name="timeStamp" value="19" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/modules/csv_utils_2.py</url>
-          <line>34</line>
-          <option name="timeStamp" value="20" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Histograms.py</url>
-          <line>44</line>
-          <option name="timeStamp" value="21" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$USER_HOME$/Downloads/barchart.py</url>
           <line>30</line>
           <option name="timeStamp" value="25" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/LSTMmodel.py</url>
+          <line>225</line>
+          <option name="timeStamp" value="32" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/ViewMemmap.py</url>
           <line>15</line>
-          <option name="timeStamp" value="29" />
+          <option name="timeStamp" value="33" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

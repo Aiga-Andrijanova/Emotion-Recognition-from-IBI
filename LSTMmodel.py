@@ -16,23 +16,23 @@ parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-sequence_name', default='IBI_2', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='Data/AllIBIdata.json', type=str)
+parser.add_argument('-dataset_path', default='data/AllIBIdata.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=10, type=int)
-parser.add_argument('-learning_rate', default=1e-3, type=float)
-parser.add_argument('-batch_size', default=32, type=int)
+parser.add_argument('-learning_rate', default=1e-3, type=float)  # e-3, e-4, e-5
+parser.add_argument('-batch_size', default=32, type=int)  # 32, 64, 128
 
 # Model parameters
 parser.add_argument('-embedding_size', default=1, type=int)
-parser.add_argument('-rnn_layers', default=1, type=int)  # 1 - 3
-parser.add_argument('-rnn_dropout', default=0, type=int)
-parser.add_argument('-hidden_size', default=16, type=int)
+parser.add_argument('-rnn_layers', default=1, type=int)  # 1 2 3
+parser.add_argument('-rnn_dropout', default=0, type=int)  # 0
+parser.add_argument('-hidden_size', default=16, type=int)  # 16, 32, 64
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
 parser.add_argument('-early_stopping_param', default='train_loss', type=str)
-parser.add_argument('-early_stopping_delta_percent', default=1e-4, type=float)
-parser.add_argument('-early_stopping_param_coef', default=-1.0, type=float)
+parser.add_argument('-early_stopping_delta_percent', default=1e-3, type=float)
+parser.add_argument('-early_stopping_param_coef', default=1.0, type=float)
 
 args, other_args = parser.parse_known_args()
 
@@ -200,11 +200,12 @@ state = {
 }
 
 metrics_epoch = {key: [] for key in metrics.keys()}
+metrics_epoch['percent_improvement'] = []
 for epoch in range(args.epoch_count):
 
     percent_improvement = 0
 
-    # Early stpping
+    # Early stopping
     if epoch > 1:
         if metric_before[args.early_stopping_param] != 0:
             if np.isnan(metric_mean[args.early_stopping_param]) or np.isinf(metric_mean[args.early_stopping_param]):
@@ -250,21 +251,20 @@ for epoch in range(args.epoch_count):
                 optimizer.step()
                 optimizer.zero_grad()
 
-            # move all data back to cpu
-            # loss = loss.cpu()
-            # x = x.cpu()
-            y_prim = y_prim.cpu()
-            y = y.cpu()
+            # y_prim = y_prim.cpu()
+            # y = y.cpu()
 
-            values, indices = torch.max(y_prim, dim=1)
-            sum = 0
-            for i in range(indices.__len__()):
-                if indices[i] == y[i]:
-                    sum += 1
-            acc = float(sum) / float(indices.__len__())
+            # values, indices = torch.max(y_prim, dim=1)
+            # sum = 0
+            # for i in range(len(indices)):
+            #     if indices[i] == y[i]:
+            #         sum += 1
+            # acc = float(sum) / float(indices.__len__())
+            y_prim_idxes = torch.argmax(y_prim, dim=1)
+            acc = torch.mean((y == y_prim_idxes) * 1.0)
 
-            metrics_batch[f'{stage}_loss'].append(loss.item())  # Tensor(0.1) => 0.1f
-            metrics_batch[f'{stage}_acc'].append(acc)
+            metrics_batch[f'{stage}_loss'].append(loss.cpu().item())  # Tensor(0.1) => 0.1f
+            metrics_batch[f'{stage}_acc'].append(acc.cpu().item())
 
         metrics_strs = []
         for key in metrics_batch.keys():
@@ -272,6 +272,7 @@ for epoch in range(args.epoch_count):
                 value = np.mean(metrics_batch[key])
                 metrics_epoch[key].append(value)
                 metrics_strs.append(f'{key}: {round(value, 2)}')
+        metrics_epoch['percent_improvement'].append(percent_improvement)
 
         print(f'epoch: {epoch} {" ".join(metrics_strs)}')
 
@@ -290,6 +291,7 @@ for epoch in range(args.epoch_count):
         state['best_loss'] = metrics_epoch['test_loss'][-1]
     if state['test_acc'] < state['best_acc']:
         state['best_acc'] = metrics_epoch['test_acc'][-1]
+    state['percent_improvement'] = metrics_epoch['percent_improvement'][-1]
 
     CsvUtils2.add_hparams(
         path_sequence=path_sequence,

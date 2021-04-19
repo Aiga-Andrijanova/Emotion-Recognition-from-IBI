@@ -9,8 +9,8 @@ from collections import Counter
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
-parser.add_argument('-JSON_PATH', default=f'Data/AllBPMdata.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'Data/AllBPMdata.mmap', type=str)
+parser.add_argument('-JSON_PATH', default=f'data/AllBPMdata.json', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'data/AllBPMdata.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
 parser.add_argument('-SLIDING_WINDOW', default=10, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
