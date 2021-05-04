@@ -6,7 +6,7 @@ import argparse
 from tqdm import tqdm
 import torch_optimizer as optim
 import matplotlib.pyplot as plt
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence, pack_sequence
 from modules.file_utils import FileUtils
 from modules.csv_utils_2 import CsvUtils2
 from datetime import datetime
@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-sequence_name', default='IBI_AMIGOS_10_valence', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='data/IBI_AMIGOS_10sec.json', type=str)
+parser.add_argument('-dataset_path', default='data/AMIGOS_IBI_30sec_byseq.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=10000, type=int)
@@ -141,31 +141,50 @@ class LSTM(torch.nn.Module):
         super().__init__()
         self.args = args
 
+        self.ff = torch.nn.Linear(
+            in_features=1,
+            out_features=args.hidden_size,
+        )
+
         self.rnn = torch.nn.LSTM(
-            input_size=1,
+            input_size=args.hidden_size,
             hidden_size=args.hidden_size,
             num_layers=args.rnn_layers,
             dropout=args.rnn_dropout,
             batch_first=True
         )
 
-        self.linear = torch.nn.Linear(in_features=args.hidden_size, out_features=CLASS_COUNT)
+        indices = []
+        for i in range(args.hidden_size):
+            indices.append(1+i*4)
 
-    def forward(self, x: PackedSequence):
+        self.rnn.bias_hh_l0.data[indices] = torch.ones(args.hidden_size)
+        self.rnn.bias_hh_l1.data[indices] = torch.ones(args.hidden_size)
+        self.rnn.bias_hh_l2.data[indices] = torch.ones(args.hidden_size)
 
-        packed_rnn_out_data, (_, _) = self.rnn.forward(x)
+        self.linear = torch.nn.Linear(in_features=args.hidden_size*3, out_features=CLASS_COUNT)
+
+    def forward(self, x):
+
+        x_prim = self.ff(x)
+
+        packed_seq = pack_sequence(x_prim)
+
+        packed_rnn_out_data, (_, _) = self.rnn.forward(packed_seq)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
 
         batch_size = unpacked_rnn_out.size()[0]
         max_seq_len = unpacked_rnn_out.size()[1]
         hidden_size = unpacked_rnn_out.size()[2]
 
-        h = torch.zeros((batch_size, hidden_size)).cuda()
+        h = torch.zeros((batch_size, hidden_size*3)).cuda()
         # (B, F)
         for idx_sample in range(batch_size):
             len_sample = unpacked_rnn_out_lenghts[idx_sample]
             h_sample = unpacked_rnn_out[idx_sample, :len_sample]
-            h[idx_sample] = torch.mean(h_sample, axis=0)
+            h[idx_sample, :hidden_size] =torch.mean(h_sample, axis=0)
+            h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
+            h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
 
         out = self.linear(h)
         return out
@@ -236,13 +255,15 @@ for epoch in range(args.epoch_count):
 
         for x, y, lengths in tqdm(data_loader):
 
-            padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
+            # padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
 
             if args.is_cuda:
                 y = y.cuda()
-                padded_packed = padded_packed.cuda()
+                # padded_packed = padded_packed.cuda()
+                x = x.cuda()
 
-            y_prim = model.forward(padded_packed)
+            # y_prim = model.forward(padded_packed)
+            y_prim = model.forward(x)
 
             loss = loss_func.forward(y_prim, y)
 
