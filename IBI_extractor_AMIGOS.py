@@ -8,13 +8,13 @@ import argparse
 from modules.dataset_utils import DatasetUtils
 
 parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_TEST/', type=str)
-parser.add_argument('-JSON_PATH', default=f'data/TEST_AMIGOS_IBI_30sec_byseq.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'data/TEST_AMIGOS_IBI_30sec_byseq.mmap', type=str)
+parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
+parser.add_argument('-JSON_PATH', default=f'data/AMIGOS_IBI_30sec_byperson_small.json', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'data/AMIGOS_IBI_30sec_byperson_small.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
 parser.add_argument('-SLIDING_WINDOW', default=30, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
-parser.add_argument('-MAX_SEQ_LEN', default=55, type=int) #61
+parser.add_argument('-MAX_SEQ_LEN', default=61, type=int) #61
 args, other_args = parser.parse_known_args()
 
 person_id = []
@@ -33,7 +33,7 @@ for filename in os.listdir(args.DATA_PATH):
     DATA = loadmat(args.DATA_PATH + filename)
 
     # There are 20 videos, 0-15 short videos, 16-19 long
-    for video in tqdm(range(0, 19)):
+    for video in tqdm(range(0, 15)):
 
         # participants 8, 24 and 28 did not attend long sessions (from the paper)
         # participant 32 doesn't have self assessment data for long videos (unknown reason)
@@ -111,9 +111,10 @@ valence_weights, class_count = DatasetUtils.weight_calculation(feature_list=vale
 # WEIGHT CALCULATION
 
 # DATA NORMALIZATION
-DatasetUtils.normalization_minmax_by_sample(
+DatasetUtils.normalization_minmax_by_person(
     memmap_path=args.MEMMAP_PATH,
-    shape=tuple([len(lengths), args.MAX_SEQ_LEN])
+    shape=tuple([len(lengths), args.MAX_SEQ_LEN]),
+    people=person_id
 )
 # DATA NORMALIZATION
 

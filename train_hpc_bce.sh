@@ -23,7 +23,7 @@ python taskgen.py \
 -num_repeat 1 \
 -num_cuda_devices_per_task 1 \
 -num_tasks_in_parallel 1 \
--dataset_path ./aiga_andrijanova/data/AMIGOS_IBI_30sec_byseq.json \
+-dataset_path ./data/AMIGOS_IBI_30sec_byseq.json \
 -epochs 100 \
 -learning_rate 1e-4 1e-5 \
 -batch_size 32 64 128 \

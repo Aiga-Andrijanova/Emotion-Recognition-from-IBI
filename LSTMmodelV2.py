@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-sequence_name', default='grid_search', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='./aiga_andrijanova/data/AMIGOS_IBI_30sec_byseq.json', type=str)
+parser.add_argument('-dataset_path', default='./data/AMIGOS_IBI_30sec_byseq.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=2000, type=int)
@@ -258,7 +258,7 @@ for epoch in range(args.epoch_count):
         if data_loader == dataloader_test:
             stage = 'test'
 
-        for x, y, lengths in tqdm(data_loader):
+        for x, y, lengths in data_loader:
 
             # padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
 
