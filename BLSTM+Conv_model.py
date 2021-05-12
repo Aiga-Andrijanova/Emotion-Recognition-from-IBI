@@ -16,10 +16,10 @@ parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-sequence_name', default='grid_search', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='./aiga_andrijanova/data/AMIGOS_IBI_30sec_byseq.json', type=str)
+parser.add_argument('-dataset_path', default='data/TEST_AMIGOS_IBI_30sec_byseq.json', type=str)
 
 # Training parameters
-parser.add_argument('-epoch_count', default=2000, type=int)
+parser.add_argument('-epoch_count', default=100, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
 parser.add_argument('-batch_size', default=128, type=int)
 
@@ -80,6 +80,8 @@ class DatasetIBI(torch.utils.data.Dataset):
                 data_json['arousal'][idx_sample],
                 data_json['valence'][idx_sample]]
             )
+
+        self.max_seq_len = self.data[0][0].shape[0]
 
     def __len__(self):
         return len(self.data)
@@ -151,7 +153,8 @@ class LSTM(torch.nn.Module):
             hidden_size=args.hidden_size,
             num_layers=args.rnn_layers,
             dropout=args.rnn_dropout,
-            batch_first=True
+            batch_first=True,
+            bidirectional=True
         )
 
         indices = []
@@ -167,14 +170,26 @@ class LSTM(torch.nn.Module):
             self.rnn.bias_hh_l2.data[indices] = torch.ones(args.hidden_size)
             self.rnn.bias_ih_l2.data[indices] = torch.ones(args.hidden_size)
 
-        self.linear = torch.nn.Linear(in_features=args.hidden_size*3, out_features=CLASS_COUNT)
+        max_seq_len = dataset_full.max_seq_len
+        self.conv = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=max_seq_len, out_channels=64, kernel_size=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(in_channels=64, out_channels=128, kernel_size=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(in_channels=128, out_channels=256, kernel_size=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv1d(in_channels=256, out_channels=args.hidden_size*3*2, kernel_size=1),
+            torch.nn.ReLU()
+        )
+
+        self.linear = torch.nn.Linear(in_features=args.hidden_size*3*2*2, out_features=CLASS_COUNT)
+        # *2 because it is bidirectional LSTM
 
     def forward(self, x):
-
+        # x (B, max_seq_len_, 1)
         x_prim = self.ff(x)
 
         packed_seq = pack_sequence(x_prim)
-
         packed_rnn_out_data, (_, _) = self.rnn.forward(packed_seq)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
 
@@ -191,7 +206,9 @@ class LSTM(torch.nn.Module):
             h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
             h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
 
-        out = self.linear(h)
+        conv_out = self.conv(x)
+        out = torch.cat((conv_out.squeeze(dim=2), h), 1)
+        out = self.linear(out)
         return out
 
 model = LSTM(args)
@@ -276,6 +293,7 @@ for epoch in range(args.epoch_count):
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
+
 
             y_prim_idxes = torch.argmax(y_prim, dim=1)
             acc = torch.mean((y == y_prim_idxes) * 1.0)

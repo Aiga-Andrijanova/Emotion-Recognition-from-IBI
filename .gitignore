@@ -1,8 +1,5 @@
-ViewMemmap.py
 /results
 ViewHR.py
-ViewMemmap.py
-ViewMemmap.py
 ViewMemmap.py
 data/AMIGOS_BPM_30sec_byperson.json
 data/AMIGOS_BPM_30sec_byperson.mmap
@@ -16,3 +13,9 @@ data/AMIGOS_IBI_30sec_byperson_histogram.png
 data/AMIGOS_IBI_30sec_byseq.json
 data/AMIGOS_IBI_30sec_byseq.mmap
 data/AMIGOS_IBI_30sec_byseq_histogram.png
+/data/AMIGOS_IBI_30sec_byperson_small.json
+/data/AMIGOS_IBI_30sec_byperson_small.mmap
+/data/AMIGOS_IBI_30sec_byseq_small.json
+/data/AMIGOS_IBI_30sec_byseq_small.mmap
+/artifacts
+/hpc_commands.txt
