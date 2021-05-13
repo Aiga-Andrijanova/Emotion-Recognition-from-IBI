@@ -16,7 +16,7 @@ cd /mnt/home/abstrac01/aiga_andrijanova/
 
 
 python taskgen.py \
--sequence_name grid_search \
+-sequence_name grid_search_2 \
 -template template_hpc.sh \
 -script LSTMmodelV2.py \
 -is_force_start True \
@@ -24,7 +24,7 @@ python taskgen.py \
 -num_cuda_devices_per_task 1 \
 -num_tasks_in_parallel 1 \
 -dataset_path ./data/AMIGOS_IBI_30sec_byseq.json \
--epochs 100 \
+-epoch_count 50 \
 -learning_rate 1e-4 1e-5 \
 -batch_size 32 64 128 \
 -rnn_layers 1 2 \

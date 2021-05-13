@@ -19,7 +19,7 @@ parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 
 parser.add_argument('-dataset_path', default='./data/AMIGOS_IBI_30sec_byseq.json', type=str)
 
 # Training parameters
-parser.add_argument('-epoch_count', default=2000, type=int)
+parser.add_argument('-epoch_count', default=100, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
 parser.add_argument('-batch_size', default=128, type=int)
 

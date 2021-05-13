@@ -2,6 +2,7 @@ import json
 import numpy as np
 import torch
 import torch.utils.data
+import torch.nn.functional as FF
 import argparse
 from tqdm import tqdm
 import torch_optimizer as optim
@@ -25,9 +26,11 @@ parser.add_argument('-batch_size', default=128, type=int)
 
 # Model parameters
 parser.add_argument('-embedding_size', default=1, type=int)
-parser.add_argument('-rnn_layers', default=3, type=int)
+parser.add_argument('-rnn_layers', default=1, type=int)
 parser.add_argument('-rnn_dropout', default=0, type=int)
-parser.add_argument('-hidden_size', default=16, type=int)
+parser.add_argument('-hidden_size', default=32, type=int)
+
+parser.add_argument('-kernel_size', default=2, type=int)
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
 parser.add_argument('-early_stopping_param', default='train_loss', type=str)
@@ -171,18 +174,20 @@ class LSTM(torch.nn.Module):
             self.rnn.bias_ih_l2.data[indices] = torch.ones(args.hidden_size)
 
         max_seq_len = dataset_full.max_seq_len
-        self.conv = torch.nn.Sequential(
-            torch.nn.Conv1d(in_channels=max_seq_len, out_channels=64, kernel_size=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(in_channels=64, out_channels=128, kernel_size=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(in_channels=128, out_channels=256, kernel_size=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv1d(in_channels=256, out_channels=args.hidden_size*3*2, kernel_size=1),
-            torch.nn.ReLU()
-        )
 
-        self.linear = torch.nn.Linear(in_features=args.hidden_size*3*2*2, out_features=CLASS_COUNT)
+        self.conv1 = torch.nn.Conv1d(in_channels=max_seq_len, out_channels=64, kernel_size=args.kernel_size)
+        torch.nn.init.kaiming_normal_(self.conv1.weight)  # aka He normal
+        self.conv2 = torch.nn.Conv1d(in_channels=64, out_channels=128, kernel_size=args.kernel_size)
+        torch.nn.init.kaiming_normal_(self.conv2.weight)
+        self.conv3 = torch.nn.Conv1d(in_channels=128, out_channels=256, kernel_size=args.kernel_size)
+        torch.nn.init.kaiming_normal_(self.conv3.weight)
+        self.conv4 = torch.nn.Conv1d(in_channels=256, out_channels=64, kernel_size=args.kernel_size)
+        torch.nn.init.kaiming_normal_(self.conv4.weight)
+
+        #L_out = ((L_in + 2P - D * (K-1) - 1) / S) + 1
+
+        # args.hidden_size*3*2*2
+        self.linear = torch.nn.Linear(in_features=256, out_features=CLASS_COUNT)
         # *2 because it is bidirectional LSTM
 
     def forward(self, x):
@@ -206,7 +211,16 @@ class LSTM(torch.nn.Module):
             h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
             h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
 
-        conv_out = self.conv(x)
+        conv_out = self.conv1(x_prim)
+        conv_out = FF.relu(conv_out)
+        conv_out = self.conv2(conv_out)
+        conv_out = FF.relu(conv_out)
+        conv_out = self.conv3(conv_out)
+        conv_out = FF.relu(conv_out)
+        conv_out = self.conv4(conv_out)
+        conv_out = FF.relu(conv_out)
+        conv_out = FF.avg_pool1d(conv_out, kernel_size=conv_out.shape[-1])  # output => (B, F, 1)
+
         out = torch.cat((conv_out.squeeze(dim=2), h), 1)
         out = self.linear(out)
         return out

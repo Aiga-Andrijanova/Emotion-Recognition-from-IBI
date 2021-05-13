@@ -3,7 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BLSTM+Conv_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/BLSTM+Conv_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/LSTMmodelV2.py" beforeDir="false" afterPath="$PROJECT_DIR$/LSTMmodelV2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ViewMemmap.py" beforeDir="false" afterPath="$PROJECT_DIR$/ViewMemmap.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train_hpc_bce.sh" beforeDir="false" afterPath="$PROJECT_DIR$/train_hpc_bce.sh" afterDir="false" />
@@ -48,7 +48,7 @@
       <recent name="C:\Users\AA00755\Documents\Python_projects\BachelorsThesis\Data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.LSTMmodelV2">
+  <component name="RunManager" selected="Python.BLSTM+Conv_model">
     <configuration name="BLSTM+Conv_model" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -156,8 +156,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.LSTMmodelV2" />
         <item itemvalue="Python.BLSTM+Conv_model" />
+        <item itemvalue="Python.LSTMmodelV2" />
         <item itemvalue="Python.IBI_extractor_AMIGOS" />
         <item itemvalue="Python.Histograms" />
         <item itemvalue="Python.BPM_extractor_AMIGOS" />
@@ -204,6 +204,11 @@
           <url>file://$USER_HOME$/anaconda3/envs/bt/Lib/site-packages/biosppy/signals/ecg.py</url>
           <line>78</line>
           <option name="timeStamp" value="42" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/BLSTM+Conv_model.py</url>
+          <line>224</line>
+          <option name="timeStamp" value="47" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
