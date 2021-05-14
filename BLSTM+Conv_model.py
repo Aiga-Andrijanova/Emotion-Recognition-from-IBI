@@ -11,13 +11,14 @@ from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_
 from modules.file_utils import FileUtils
 from modules.csv_utils_2 import CsvUtils2
 from datetime import datetime
+import time
 
 parser = argparse.ArgumentParser(add_help=False)
 
 parser.add_argument('-sequence_name', default='grid_search', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='data/TEST_AMIGOS_IBI_30sec_byseq.json', type=str)
+parser.add_argument('-dataset_path', default='data/AMIGOS_IBI_30sec_byseq.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=100, type=int)
@@ -42,15 +43,15 @@ args, other_args = parser.parse_known_args()
 path_sequence = f'./results/{args.sequence_name}'
 args.run_name += ('-' + datetime.utcnow().strftime(f'%y-%m-%d--%H-%M-%S'))
 path_run = f'./results/{args.sequence_name}/{args.run_name}'
-path_artificats = f'./artifacts/{args.sequence_name}/{args.run_name}'
+path_artifacts = f'./artifacts/{args.sequence_name}/{args.run_name}'
 FileUtils.createDir(path_run)
-FileUtils.createDir(path_artificats)
+FileUtils.createDir(path_artifacts)
 FileUtils.writeJSON(f'{path_run}/args.json', args.__dict__)
 
 with open(args.dataset_path) as fp:
     data_json = json.load(fp)
 CLASS_COUNT = data_json['class_count']
-AROUSAL_WEIGHTS = torch.FloatTensor(data_json['valence_weights'])
+AROUSAL_WEIGHTS = torch.FloatTensor(data_json['arousal_weights'])
 VALENCE_WEIGHTS = torch.FloatTensor(data_json['valence_weights'])
 del data_json
 
@@ -98,24 +99,20 @@ class DatasetIBI(torch.utils.data.Dataset):
         return t_ibi, t_length, t_valence
 
 
-torch.manual_seed(0)  # lock seed
+torch.manual_seed(0)  # lock seed for dataset splitting
 dataset_full = DatasetIBI(args.dataset_path)
 dataset_train, dataset_test = torch.utils.data.random_split(
     dataset_full, lengths=[int(len(dataset_full)*0.8), len(dataset_full)-int(len(dataset_full)*0.8)])
 
-torch.seed()  # init random seed
-
+torch.manual_seed(int(time.time()))  # randomize seed
 
 def collate_fn(batch):
-
-    #t_ibi_batch = torch.zeros([len(batch), 25, 1])
 
     unzipped_batch = zip(*batch)
     unzipped_batch_list = list(unzipped_batch)
     t_lengths_batch = torch.stack(unzipped_batch_list[1]).squeeze(dim=1)
     t_valence_batch = torch.stack(unzipped_batch_list[2]).squeeze(dim=1)
     t_ibi_batch = torch.stack(unzipped_batch_list[0]).unsqueeze(dim=2)
-
 
     indices = torch.argsort(t_lengths_batch, descending=True)
 
@@ -164,6 +161,7 @@ class LSTM(torch.nn.Module):
         for i in range(args.hidden_size):
             indices.append(1+i*4)
 
+        # Set forget gate bias to 1:
         self.rnn.bias_hh_l0.data[indices] = torch.ones(args.hidden_size)
         self.rnn.bias_ih_l0.data[indices] = torch.ones(args.hidden_size)
         if args.rnn_layers == 2 or args.rnn_layers == 3:
@@ -175,13 +173,13 @@ class LSTM(torch.nn.Module):
 
         max_seq_len = dataset_full.max_seq_len
 
-        self.conv1 = torch.nn.Conv1d(in_channels=max_seq_len, out_channels=64, kernel_size=args.kernel_size)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=64, kernel_size=2, padding=1, stride=2)
         torch.nn.init.kaiming_normal_(self.conv1.weight)  # aka He normal
-        self.conv2 = torch.nn.Conv1d(in_channels=64, out_channels=128, kernel_size=args.kernel_size)
+        self.conv2 = torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=2, padding=1, stride=2)
         torch.nn.init.kaiming_normal_(self.conv2.weight)
-        self.conv3 = torch.nn.Conv1d(in_channels=128, out_channels=256, kernel_size=args.kernel_size)
+        self.conv3 = torch.nn.Conv2d(in_channels=128, out_channels=256, kernel_size=2, padding=1, stride=2)
         torch.nn.init.kaiming_normal_(self.conv3.weight)
-        self.conv4 = torch.nn.Conv1d(in_channels=256, out_channels=64, kernel_size=args.kernel_size)
+        self.conv4 = torch.nn.Conv2d(in_channels=256, out_channels=64, kernel_size=2, padding=1, stride=2)
         torch.nn.init.kaiming_normal_(self.conv4.weight)
 
         #L_out = ((L_in + 2P - D * (K-1) - 1) / S) + 1
@@ -191,37 +189,55 @@ class LSTM(torch.nn.Module):
         # *2 because it is bidirectional LSTM
 
     def forward(self, x):
-        # x (B, max_seq_len_, 1)
-        x_prim = self.ff(x)
+        x_packed = pack_padded_sequence(x, lengths, batch_first=True)
+        x_prim = self.ff.forward(x_packed.data)
 
-        packed_seq = pack_sequence(x_prim)
-        packed_rnn_out_data, (_, _) = self.rnn.forward(packed_seq)
-        unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
+        B_size = x.size(0)
+        max_seq_len = x.size(1)
+        x_prim_batches = torch.zeros([B_size, 1, max_seq_len, args.hidden_size]).to('cuda')  # (B, 1, max_seq_len, hidden_size)
 
-        batch_size = unpacked_rnn_out.size()[0]
-        max_seq_len = unpacked_rnn_out.size()[1]
-        hidden_size = unpacked_rnn_out.size()[2]
+        x_prim_copy = x_prim.clone().detach()
+        x_prim_idx = 0
+        batch_idx = 0
+        for batch_size in x_packed.batch_sizes:
+            for i in range(batch_size):
+                x_prim_batches[i, 0, batch_idx] = x_prim_copy[x_prim_idx]
+                x_prim_idx += 1
+            batch_idx += 1
+
+        x_prim_seq = PackedSequence(
+            data=x_prim,
+            batch_sizes=x_packed.batch_sizes
+        )
+
+        packed_rnn_out_data, (_, _) = self.rnn.forward(x_prim_seq)
+        unpacked_rnn_out, unpacked_rnn_out_lengths = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
+
+        batch_size = unpacked_rnn_out.size(0)
+        max_seq_len = unpacked_rnn_out.size(1)
+        hidden_size = unpacked_rnn_out.size(2)
 
         h = torch.zeros((batch_size, hidden_size*3)).cuda()
         # (B, F)
         for idx_sample in range(batch_size):
-            len_sample = unpacked_rnn_out_lenghts[idx_sample]
+            len_sample = unpacked_rnn_out_lengths[idx_sample]
             h_sample = unpacked_rnn_out[idx_sample, :len_sample]
-            h[idx_sample, :hidden_size] =torch.mean(h_sample, axis=0)
+            h[idx_sample, :hidden_size] = torch.mean(h_sample, axis=0)
             h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
             h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
 
-        conv_out = self.conv1(x_prim)
+        # x_prim_batches.shape => (B, 1, MSL, H) (MSL=Max_seq_len)
+        conv_out = self.conv1(x_prim_batches)  # (B, 64, MSL/2, H/2+1)
         conv_out = FF.relu(conv_out)
-        conv_out = self.conv2(conv_out)
+        conv_out = self.conv2(conv_out)  # (B, 128, MSL/2, H/2+1)
         conv_out = FF.relu(conv_out)
-        conv_out = self.conv3(conv_out)
+        conv_out = self.conv3(conv_out)  # (B, 256, MSL/2, H/2+1)
         conv_out = FF.relu(conv_out)
-        conv_out = self.conv4(conv_out)
+        conv_out = self.conv4(conv_out)  # (B, 64, MSL/2, H/2+1)
         conv_out = FF.relu(conv_out)
-        conv_out = FF.avg_pool1d(conv_out, kernel_size=conv_out.shape[-1])  # output => (B, F, 1)
+        conv_out = FF.adaptive_avg_pool2d(conv_out, (1, 1))  # (B, 64, 1, 1)
 
-        out = torch.cat((conv_out.squeeze(dim=2), h), 1)
+        out = torch.cat((conv_out.squeeze(dim=-1).squeeze(dim=-1), h), 1)
         out = self.linear(out)
         return out
 

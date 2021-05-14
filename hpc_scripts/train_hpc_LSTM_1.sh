@@ -16,7 +16,7 @@ cd /mnt/home/abstrac01/aiga_andrijanova/
 
 
 python taskgen.py \
--sequence_name grid_search_2 \
+-sequence_name grid_search_LSTM_byseq \
 -template template_hpc.sh \
 -script LSTMmodelV2.py \
 -is_force_start True \
@@ -27,5 +27,5 @@ python taskgen.py \
 -epoch_count 50 \
 -learning_rate 1e-4 1e-5 \
 -batch_size 32 64 128 \
--rnn_layers 1 2 \
+-rnn_layers 1 2 3 \
 -hidden_size 16 32 64

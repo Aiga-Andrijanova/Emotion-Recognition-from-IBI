@@ -3,13 +3,14 @@ import numpy as np
 import torch
 import torch.utils.data
 import argparse
-from tqdm import tqdm
+# from tqdm import tqdm
 import torch_optimizer as optim
 import matplotlib.pyplot as plt
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence, pack_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
 from modules.file_utils import FileUtils
 from modules.csv_utils_2 import CsvUtils2
 from datetime import datetime
+import time
 
 parser = argparse.ArgumentParser(add_help=False)
 
@@ -98,7 +99,7 @@ dataset_full = DatasetIBI(args.dataset_path)
 dataset_train, dataset_test = torch.utils.data.random_split(
     dataset_full, lengths=[int(len(dataset_full)*0.8), len(dataset_full)-int(len(dataset_full)*0.8)])
 
-torch.seed()  # init random seed
+torch.manual_seed(int(time.time()))  # init random seed
 
 
 def collate_fn(batch):
@@ -169,25 +170,28 @@ class LSTM(torch.nn.Module):
 
         self.linear = torch.nn.Linear(in_features=args.hidden_size*3, out_features=CLASS_COUNT)
 
-    def forward(self, x):
+    def forward(self, x, lengths):
+        x_packed = pack_padded_sequence(x, lengths, batch_first=True)
+        x_prim = self.ff.forward(x_packed.data)
 
-        x_prim = self.ff(x)
+        x_prim_seq = PackedSequence(
+            data=x_prim,
+            batch_sizes=x_packed.batch_sizes
+        )
 
-        packed_seq = pack_sequence(x_prim)
-
-        packed_rnn_out_data, (_, _) = self.rnn.forward(packed_seq)
+        packed_rnn_out_data, (_, _) = self.rnn.forward(x_prim_seq)
         unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
 
-        batch_size = unpacked_rnn_out.size()[0]
-        max_seq_len = unpacked_rnn_out.size()[1]
-        hidden_size = unpacked_rnn_out.size()[2]
+        batch_size = unpacked_rnn_out.size(0)
+        max_seq_len = unpacked_rnn_out.size(1)
+        hidden_size = unpacked_rnn_out.size(2)
 
         h = torch.zeros((batch_size, hidden_size*3)).cuda()
         # (B, F)
         for idx_sample in range(batch_size):
             len_sample = unpacked_rnn_out_lenghts[idx_sample]
             h_sample = unpacked_rnn_out[idx_sample, :len_sample]
-            h[idx_sample, :hidden_size] =torch.mean(h_sample, axis=0)
+            h[idx_sample, :hidden_size] = torch.mean(h_sample, axis=0)
             h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
             h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
 
@@ -268,7 +272,7 @@ for epoch in range(args.epoch_count):
                 x = x.cuda()
 
             # y_prim = model.forward(padded_packed)
-            y_prim = model.forward(x)
+            y_prim = model.forward(x, lengths)
 
             loss = loss_func.forward(y_prim, y)
 
