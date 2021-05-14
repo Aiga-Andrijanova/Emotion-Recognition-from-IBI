@@ -3,21 +3,21 @@ import numpy as np
 import torch
 import torch.utils.data
 import argparse
-# from tqdm import tqdm
+from tqdm import tqdm
 import torch_optimizer as optim
 import matplotlib.pyplot as plt
-from torch.nn.utils.rnn import PackedSequence, pack_padded_sequence, pad_packed_sequence
 from modules.file_utils import FileUtils
 from modules.csv_utils_2 import CsvUtils2
 from datetime import datetime
 import time
 
 parser = argparse.ArgumentParser(add_help=False)
+parser.add_argument('-model', default='LSTM_V2', type=str)
 
 parser.add_argument('-sequence_name', default='grid_search', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='./data/AMIGOS_IBI_30sec_byseq.json', type=str)
+parser.add_argument('-dataset_path', default='./data/AMIGOS_IBI_30sec_byperson_small_2C.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=100, type=int)
@@ -40,14 +40,17 @@ args, other_args = parser.parse_known_args()
 path_sequence = f'./results/{args.sequence_name}'
 args.run_name += ('-' + datetime.utcnow().strftime(f'%y-%m-%d--%H-%M-%S'))
 path_run = f'./results/{args.sequence_name}/{args.run_name}'
-path_artificats = f'./artifacts/{args.sequence_name}/{args.run_name}'
+path_artifacts = f'./artifacts/{args.sequence_name}/{args.run_name}'
 FileUtils.createDir(path_run)
-FileUtils.createDir(path_artificats)
+FileUtils.createDir(path_artifacts)
 FileUtils.writeJSON(f'{path_run}/args.json', args.__dict__)
 
 with open(args.dataset_path) as fp:
     data_json = json.load(fp)
-CLASS_COUNT = data_json['class_count']
+
+parser.add_argument('-class_count', default=data_json['class_count'], type=int)
+args, other_args = parser.parse_known_args()
+
 AROUSAL_WEIGHTS = torch.FloatTensor(data_json['valence_weights'])
 VALENCE_WEIGHTS = torch.FloatTensor(data_json['valence_weights'])
 del data_json
@@ -104,14 +107,11 @@ torch.manual_seed(int(time.time()))  # init random seed
 
 def collate_fn(batch):
 
-    #t_ibi_batch = torch.zeros([len(batch), 25, 1])
-
     unzipped_batch = zip(*batch)
     unzipped_batch_list = list(unzipped_batch)
     t_lengths_batch = torch.stack(unzipped_batch_list[1]).squeeze(dim=1)
     t_valence_batch = torch.stack(unzipped_batch_list[2]).squeeze(dim=1)
     t_ibi_batch = torch.stack(unzipped_batch_list[0]).unsqueeze(dim=2)
-
 
     indices = torch.argsort(t_lengths_batch, descending=True)
 
@@ -136,69 +136,8 @@ dataloader_test = torch.utils.data.DataLoader(
     shuffle=False
 )
 
-
-class LSTM(torch.nn.Module):
-    def __init__(self, args):
-        super().__init__()
-        self.args = args
-
-        self.ff = torch.nn.Linear(
-            in_features=1,
-            out_features=args.hidden_size,
-        )
-
-        self.rnn = torch.nn.LSTM(
-            input_size=args.hidden_size,
-            hidden_size=args.hidden_size,
-            num_layers=args.rnn_layers,
-            dropout=args.rnn_dropout,
-            batch_first=True
-        )
-
-        indices = []
-        for i in range(args.hidden_size):
-            indices.append(1+i*4)
-
-        self.rnn.bias_hh_l0.data[indices] = torch.ones(args.hidden_size)
-        self.rnn.bias_ih_l0.data[indices] = torch.ones(args.hidden_size)
-        if args.rnn_layers == 2 or args.rnn_layers == 3:
-            self.rnn.bias_hh_l1.data[indices] = torch.ones(args.hidden_size)
-            self.rnn.bias_ih_l1.data[indices] = torch.ones(args.hidden_size)
-        if args.rnn_layers == 3:
-            self.rnn.bias_hh_l2.data[indices] = torch.ones(args.hidden_size)
-            self.rnn.bias_ih_l2.data[indices] = torch.ones(args.hidden_size)
-
-        self.linear = torch.nn.Linear(in_features=args.hidden_size*3, out_features=CLASS_COUNT)
-
-    def forward(self, x, lengths):
-        x_packed = pack_padded_sequence(x, lengths, batch_first=True)
-        x_prim = self.ff.forward(x_packed.data)
-
-        x_prim_seq = PackedSequence(
-            data=x_prim,
-            batch_sizes=x_packed.batch_sizes
-        )
-
-        packed_rnn_out_data, (_, _) = self.rnn.forward(x_prim_seq)
-        unpacked_rnn_out, unpacked_rnn_out_lenghts = pad_packed_sequence(packed_rnn_out_data, batch_first=True)
-
-        batch_size = unpacked_rnn_out.size(0)
-        max_seq_len = unpacked_rnn_out.size(1)
-        hidden_size = unpacked_rnn_out.size(2)
-
-        h = torch.zeros((batch_size, hidden_size*3)).cuda()
-        # (B, F)
-        for idx_sample in range(batch_size):
-            len_sample = unpacked_rnn_out_lenghts[idx_sample]
-            h_sample = unpacked_rnn_out[idx_sample, :len_sample]
-            h[idx_sample, :hidden_size] = torch.mean(h_sample, axis=0)
-            h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
-            h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
-
-        out = self.linear(h)
-        return out
-
-model = LSTM(args)
+Model = getattr(__import__('models.' + args.model, fromlist=['Model']), 'Model')
+model = Model(args)
 loss_func = torch.nn.CrossEntropyLoss(weight=VALENCE_WEIGHTS)
 optimizer = optim.RAdam(model.parameters(), lr=args.learning_rate)
 
@@ -262,16 +201,12 @@ for epoch in range(args.epoch_count):
         if data_loader == dataloader_test:
             stage = 'test'
 
-        for x, y, lengths in data_loader:
-
-            # padded_packed = pack_padded_sequence(x, lengths, batch_first=True)
+        for x, y, lengths in tqdm(data_loader):
 
             if args.is_cuda:
                 y = y.cuda()
-                # padded_packed = padded_packed.cuda()
                 x = x.cuda()
 
-            # y_prim = model.forward(padded_packed)
             y_prim = model.forward(x, lengths)
 
             loss = loss_func.forward(y_prim, y)
@@ -322,13 +257,13 @@ for epoch in range(args.epoch_count):
         global_step=epoch
     )
 
-    plt1 = plt.plot(metrics_epoch['train_loss'], '-b', label='train loss')
-    plt2 = plt.plot(metrics_epoch['train_acc'], '--r', label='train acc')
-    plt3 = plt.plot(metrics_epoch['test_loss'], '-.c', label='test loss')
-    plt4 = plt.plot(metrics_epoch['train_acc'], '-m', label='test acc')
-
-    plts = plt1 + plt2 + plt3 + plt4
-    plt.legend(plts, [it.get_label() for it in plts])
-    plt.draw()
-    plt.pause(0.1)
+    # plt1 = plt.plot(metrics_epoch['train_loss'], '-b', label='train loss')
+    # plt2 = plt.plot(metrics_epoch['train_acc'], '--r', label='train acc')
+    # plt3 = plt.plot(metrics_epoch['test_loss'], '-.c', label='test loss')
+    # plt4 = plt.plot(metrics_epoch['train_acc'], '-m', label='test acc')
+    #
+    # plts = plt1 + plt2 + plt3 + plt4
+    # plt.legend(plts, [it.get_label() for it in plts])
+    # plt.draw()
+    # plt.pause(0.1)
 

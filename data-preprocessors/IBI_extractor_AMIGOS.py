@@ -9,8 +9,8 @@ from modules.dataset_utils import DatasetUtils
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
-parser.add_argument('-JSON_PATH', default=f'data/AMIGOS_IBI_30sec_byperson_small.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'data/AMIGOS_IBI_30sec_byperson_small.mmap', type=str)
+parser.add_argument('-JSON_PATH', default=f'data/AMIGOS_IBI_30sec_byseq_small_2C.json', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'data/AMIGOS_IBI_30sec_byseq_small_2C.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
 parser.add_argument('-SLIDING_WINDOW', default=30, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
@@ -43,8 +43,21 @@ for filename in os.listdir(args.DATA_PATH):
             if person in [8, 24, 28, 32]:
                 continue
 
-        arousal = int(round(DATA['labels_selfassessment'][0][video][0, 0], 0)) - 1
-        valence = int(round(DATA['labels_selfassessment'][0][video][0, 1], 0)) - 1
+        # 9 classes
+        # arousal = int(round(DATA['labels_selfassessment'][0][video][0, 0], 0)) - 1
+        # valence = int(round(DATA['labels_selfassessment'][0][video][0, 1], 0)) - 1
+
+        # 2 classes
+        arousal = round(DATA['labels_selfassessment'][0][video][0, 0], 1) - 1
+        valence = round(DATA['labels_selfassessment'][0][video][0, 1], 1) - 1
+        if arousal > 3.5:
+            arousal = 1
+        else:
+            arousal = 0
+        if valence > 3.5:
+            valence = 1
+        else:
+            valence = 0
 
         LeadII = DATA['joined_data'][0][video][:, 14]
         LeadIII = DATA['joined_data'][0][video][:, 15]
@@ -111,10 +124,9 @@ valence_weights, class_count = DatasetUtils.weight_calculation(feature_list=vale
 # WEIGHT CALCULATION
 
 # DATA NORMALIZATION
-DatasetUtils.normalization_minmax_by_person(
+DatasetUtils.normalization_minmax_by_sample(
     memmap_path=args.MEMMAP_PATH,
-    shape=tuple([len(lengths), args.MAX_SEQ_LEN]),
-    people=person_id
+    shape=tuple([len(lengths), args.MAX_SEQ_LEN])
 )
 # DATA NORMALIZATION
 
