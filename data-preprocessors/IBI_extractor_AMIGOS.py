@@ -9,8 +9,8 @@ from modules.dataset_utils import DatasetUtils
 
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-DATA_PATH', default=f'D:/Universitātes darbi/Bakalaura darbs/Datasets/AMIGOS/Data_Preprocessed/', type=str)
-parser.add_argument('-JSON_PATH', default=f'data/AMIGOS_IBI_30sec_byseq_small_2C.json', type=str)
-parser.add_argument('-MEMMAP_PATH', default=f'data/AMIGOS_IBI_30sec_byseq_small_2C.mmap', type=str)
+parser.add_argument('-JSON_PATH', default=f'../data/AMIGOS_IBI_30sec_byperson_small.json', type=str)
+parser.add_argument('-MEMMAP_PATH', default=f'../data/AMIGOS_IBI_30sec_byperson_small.mmap', type=str)
 parser.add_argument('-FREQ', default=128, type=int)
 parser.add_argument('-SLIDING_WINDOW', default=30, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
@@ -124,9 +124,10 @@ valence_weights, class_count = DatasetUtils.weight_calculation(feature_list=vale
 # WEIGHT CALCULATION
 
 # DATA NORMALIZATION
-DatasetUtils.normalization_minmax_by_sample(
+DatasetUtils.normalization_minmax_by_person(
     memmap_path=args.MEMMAP_PATH,
-    shape=tuple([len(lengths), args.MAX_SEQ_LEN])
+    shape=tuple([len(lengths), args.MAX_SEQ_LEN]),
+    people=person_id
 )
 # DATA NORMALIZATION
 

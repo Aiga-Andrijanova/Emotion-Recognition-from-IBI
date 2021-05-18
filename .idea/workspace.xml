@@ -2,19 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_2C_1.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_2C_2.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/LSTM.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/LSTM_Conv2d.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/LSTM_V2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_9C_small_1.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_9C_small_2.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BLSTM+Conv_model.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/BPM_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/data-preprocessors/BPM_extractor_AMIGOS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSTMmodel.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LSTMmodelV2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ViewMemmap.py" beforeDir="false" afterPath="$PROJECT_DIR$/ViewMemmap.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,8 +51,8 @@
       <recent name="C:\Users\AA00755\Documents\Python_projects\BachelorsThesis\Libraries" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main">
-    <configuration name="BLSTM+Conv_model" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.IBI_extractor_AMIGOS (1)">
+    <configuration name="IBI_extractor_AMIGOS (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -67,32 +60,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/data-preprocessors" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/BLSTM+Conv_model.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="Histograms" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="BachelorsThesis" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Histograms.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -143,6 +115,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="ViewMemmap" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="BachelorsThesis" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/ViewMemmap.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -166,11 +159,11 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
+        <item itemvalue="Python.ViewMemmap" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.IBI_extractor_AMIGOS" />
         <item itemvalue="Python.LSTMmodelV2" />
-        <item itemvalue="Python.BLSTM+Conv_model" />
-        <item itemvalue="Python.Histograms" />
       </list>
     </recent_temporary>
   </component>
@@ -209,11 +202,6 @@
           <url>file://$PROJECT_DIR$/ViewHR.py</url>
           <line>21</line>
           <option name="timeStamp" value="36" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$USER_HOME$/anaconda3/envs/bt/Lib/site-packages/biosppy/signals/ecg.py</url>
-          <line>78</line>
-          <option name="timeStamp" value="42" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
