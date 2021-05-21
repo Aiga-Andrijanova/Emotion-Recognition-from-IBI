@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import numpy.ma
 import torch
 import torch.utils.data
 import argparse
@@ -10,25 +11,28 @@ from modules.file_utils import FileUtils
 from modules.csv_utils_2 import CsvUtils2
 from datetime import datetime
 import time
+from sklearn.metrics import f1_score
 
 parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument('-model', default='LSTM_V2', type=str)
+parser.add_argument('-model', default='Conv2d_Fourier', type=str)
 
 parser.add_argument('-sequence_name', default='grid_search', type=str)
 parser.add_argument('-run_name', default='test', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='./data/AMIGOS_IBI_30sec_byperson_small_2C.json', type=str)
+parser.add_argument('-dataset_path', default='./data/TEST_AMIGOS_IBI_30sec_byperson.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=100, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
-parser.add_argument('-batch_size', default=128, type=int)
+parser.add_argument('-batch_size', default=32, type=int)
 
 # Model parameters
-parser.add_argument('-embedding_size', default=1, type=int)
-parser.add_argument('-rnn_layers', default=3, type=int)
-parser.add_argument('-rnn_dropout', default=0, type=int)
-parser.add_argument('-hidden_size', default=16, type=int)
+# parser.add_argument('-embedding_size', default=1, type=int)
+parser.add_argument('-rnn_layers', default=2, type=int)
+# parser.add_argument('-rnn_dropout', default=0, type=int)
+parser.add_argument('-hidden_size', default=153, type=int)
+
+# parser.add_argument('-kernel_size', default=1, type=int)
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
 parser.add_argument('-early_stopping_param', default='train_loss', type=str)
@@ -49,6 +53,7 @@ with open(args.dataset_path) as fp:
     data_json = json.load(fp)
 
 parser.add_argument('-class_count', default=data_json['class_count'], type=int)
+parser.add_argument('-max_seq_len', default=data_json['shape'][1], type=int)
 args, other_args = parser.parse_known_args()
 
 AROUSAL_WEIGHTS = torch.FloatTensor(data_json['valence_weights'])
@@ -149,7 +154,8 @@ metrics = {}
 for stage in ['train', 'test']:
     for metric in [
         'loss',
-        'acc'
+        'acc',
+        'F1'
     ]:
         metrics[f'{stage}_{metric}'] = 0
 
@@ -158,12 +164,14 @@ metric_mean = {}
 early_stopping_patience = 0
 
 state = {
-    'epoch': 0,
     'train_loss': -1.0,
     'test_loss': -1.0,
     'best_loss': -1.0,
     'train_acc': -1.0,
-    'test_acc': -1.0
+    'test_acc': -1.0,
+    'best_acc': -1.0,
+    'train_F1': -1.0,
+    'test_F1': -1.0
 }
 
 metrics_epoch = {key: [] for key in metrics.keys()}
@@ -201,7 +209,7 @@ for epoch in range(args.epoch_count):
         if data_loader == dataloader_test:
             stage = 'test'
 
-        for x, y, lengths in tqdm(data_loader):
+        for x, y, lengths in data_loader:
 
             if args.is_cuda:
                 y = y.cuda()
@@ -219,8 +227,16 @@ for epoch in range(args.epoch_count):
             y_prim_idxes = torch.argmax(y_prim, dim=1)
             acc = torch.mean((y == y_prim_idxes) * 1.0)
 
+            F1_score = f1_score(y.to('cpu'), y_prim_idxes.to('cpu'), average='micro', zero_division=0)
+
             metrics_batch[f'{stage}_loss'].append(loss.cpu().item())  # Tensor(0.1) => 0.1f
             metrics_batch[f'{stage}_acc'].append(acc.cpu().item())
+            metrics_batch[f'{stage}_F1'].append(F1_score)
+
+            conf_matrix = numpy.zeros((args.class_count, args.class_count))
+            for idx, y_prim_idx in enumerate(y_prim_idxes):
+                y_idx = y[idx]
+                conf_matrix[y_idx.item(), y_prim_idx.item()] += 1
 
         metrics_strs = []
         for key in metrics_batch.keys():
@@ -239,7 +255,8 @@ for epoch in range(args.epoch_count):
     state['test_loss'] = metrics_epoch['test_loss'][-1]
     state['train_acc'] = metrics_epoch['train_acc'][-1]
     state['test_acc'] = metrics_epoch['test_acc'][-1]
-    state['epoch'] = epoch
+    state['train_F1'] = metrics_epoch['train_F1'][-1]
+    state['test_F1'] = metrics_epoch['test_F1'][-1]
     if epoch == 0:
         state['best_loss'] = metrics_epoch['test_loss'][-1]
         state['best_acc'] = metrics_epoch['test_acc'][-1]
@@ -256,6 +273,28 @@ for epoch in range(args.epoch_count):
         metrics_dict=state,
         global_step=epoch
     )
+
+    plt.clf()
+    plt.figure(figsize=(6, 7))
+    plt.tight_layout()
+    plt.tight_layout(f'conf_matrix epoch: {epoch}')
+    plt.imshow(conf_matrix.transpose(), interpolation='nearest', cmap=plt.get_cmap('Greys'))
+    titles_x = np.arange(args.class_count).astype(np.int)
+    titles_y = np.arange(args.class_count).astype(np.int)
+    for i in range(len(titles_y)):
+        for j in range(len(titles_y)):
+            plt.annotate(
+                str(round(conf_matrix[i, j], 1)),
+                xy=(i, j),
+                horizontalalignment='center',
+                verticalalignment='center',
+                backgroundcolor='white'
+            )
+    plt.xticks(titles_x, titles_y, rotation=45)
+    plt.yticks(titles_x, titles_y)
+    plt.xlabel('Faktiskā klase')
+    plt.ylabel('Piešķirtā klase')
+    plt.savefig(f'{path_run}/{epoch}-conf.png')
 
     # plt1 = plt.plot(metrics_epoch['train_loss'], '-b', label='train loss')
     # plt2 = plt.plot(metrics_epoch['train_acc'], '--r', label='train acc')

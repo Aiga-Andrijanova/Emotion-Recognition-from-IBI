@@ -260,7 +260,7 @@ for idx_run, run in enumerate(runs):
     process.cuda_devices_for_run = cuda_devices_for_run
     parallel_processes.append(process)
 
-    time.sleep(1.1) # delay for timestamp based naming
+    time.sleep(1.1)  # delay for timestamp based naming
 
     while len(parallel_processes) >= args.num_tasks_in_parallel:
         time.sleep(1)

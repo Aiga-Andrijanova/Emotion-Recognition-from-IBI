@@ -16,15 +16,16 @@ cd /mnt/home/abstrac01/aiga_andrijanova/
 
 
 python taskgen.py \
--sequence_name grid_search_LSTM_9C_byperson \
+-sequence_name grid_search_AMIGOS_BLSTM_2C_byperson \
 -template template_hpc.sh \
 -script main.py \
 -is_force_start True \
 -num_repeat 1 \
 -num_cuda_devices_per_task 1 \
--num_tasks_in_parallel 1 \
--dataset_path ./data/AMIGOS_IBI_30sec_byperson_small.json \
--epoch_count 100 \
+-num_tasks_in_parallel 12 \
+-model BLSTM_Conv1 \
+-dataset_path ./data/AMIGOS_IBI_30sec_byperson_small_2C.json \
+-epoch_count 50 \
 -learning_rate 1e-4 1e-5 \
 -batch_size 32 64 128 \
 -rnn_layers 1 2 3 \

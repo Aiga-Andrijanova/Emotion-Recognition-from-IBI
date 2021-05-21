@@ -16,14 +16,15 @@ cd /mnt/home/abstrac01/aiga_andrijanova/
 
 
 python taskgen.py \
--sequence_name grid_search_LSTM_2C_byseq \
+-sequence_name grid_search_DREAMER_LSTM_2C_byseq \
 -template template_hpc.sh \
 -script main.py \
 -is_force_start True \
 -num_repeat 1 \
 -num_cuda_devices_per_task 1 \
--num_tasks_in_parallel 1 \
--dataset_path ./data/AMIGOS_IBI_30sec_byseq_small_2C.json \
+-num_tasks_in_parallel 6 \
+-model LSTM_V2 \
+-dataset_path ./data/DREAMER_IBI_30sec_byseq.json \
 -epoch_count 100 \
 -learning_rate 1e-4 1e-5 \
 -batch_size 32 64 128 \

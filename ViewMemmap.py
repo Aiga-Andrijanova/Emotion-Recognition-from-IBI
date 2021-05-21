@@ -1,7 +1,7 @@
 import json
 import numpy as np
 
-path_data_json = 'data/TEST_AMIGOS_BPM_30sec_byseq.json'
+path_data_json = 'data/AMIGOS_BPM_30sec_byperson.json'
 with open(path_data_json) as fp:
     data_json = json.load(fp)
 
