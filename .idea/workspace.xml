@@ -2,22 +2,20 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8aa5531c-4124-4a8b-83e8-9dd92976ad5a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/data-preprocessors/IBI_extractor_DREAMER.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_BR_A_3.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/BLSTM_Conv1.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/Conv2d_Fourier.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_3.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_Furje_2C_1.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_Furje_2C_2.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_Furje_2C_3.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_Furje_2C_4.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_BR_A_6.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Histograms.py" beforeDir="false" afterPath="$PROJECT_DIR$/Histograms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ViewMemmap.py" beforeDir="false" afterPath="$PROJECT_DIR$/ViewMemmap.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" beforeDir="false" afterPath="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_1.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_2.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_2.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hpc_scripts/train_LSTM_2C_1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_2C_1.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hpc_scripts/train_LSTM_2C_2.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_2C_2.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_LSTM_9C_small_1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_1.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_LSTM_9C_small_2.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_D_2C_1.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_hpc_LSTM_1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_2.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_hpc_LSTM_conv.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_LSTM_BR_A_1.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hpc_scripts/train_LSTM_BR_A_1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/hpc_scripts/train_BLSTM_2C_4.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/modules/taskgen.py" beforeDir="false" afterPath="$PROJECT_DIR$/modules/taskgen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/Conv2d_Fourier.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/Conv2d_Fourier.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,7 +42,7 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/hpc_scripts" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../plda" />
     <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
@@ -83,6 +81,27 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Conv2d_Fourier" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="BachelorsThesis" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/models" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/models/Conv2d_Fourier.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="Histograms" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="BachelorsThesis" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -96,27 +115,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Histograms.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="IBI_extractor_AMIGOS (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="BachelorsThesis" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/data-preprocessors" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/data-preprocessors/IBI_extractor_AMIGOS.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -170,10 +168,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.Conv2d_Fourier" />
         <item itemvalue="Python.BLSTM_Conv1" />
         <item itemvalue="Python.Histograms" />
         <item itemvalue="Python.IBI_extractor_DREAMER" />
-        <item itemvalue="Python.IBI_extractor_AMIGOS (1)" />
       </list>
     </recent_temporary>
   </component>
@@ -219,24 +217,14 @@
           <option name="timeStamp" value="46" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>231</line>
-          <option name="timeStamp" value="52" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/models/BLSTM_Conv1.py</url>
           <line>93</line>
           <option name="timeStamp" value="53" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/models/Conv2d_Fourier.py</url>
-          <line>39</line>
-          <option name="timeStamp" value="58" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/models/Conv2d_Fourier.py</url>
-          <line>38</line>
-          <option name="timeStamp" value="59" />
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>45</line>
+          <option name="timeStamp" value="61" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>

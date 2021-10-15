@@ -16,7 +16,7 @@ cd /mnt/home/abstrac01/aiga_andrijanova/
 
 
 python taskgen.py \
--sequence_name best_runs_DREAMER_BLSTM_2C_byperson \
+-sequence_name best_runs_DREAMER_BLSTM_2C_byseq \
 -template template_hpc.sh \
 -script main.py \
 -is_force_start True \
@@ -24,7 +24,7 @@ python taskgen.py \
 -num_cuda_devices_per_task 1 \
 -num_tasks_in_parallel 12 \
 -model BLSTM_Conv1 \
--dataset_path ./data/DREAMER_IBI_30sec_byperson.json \
+-dataset_path ./data/DREAMER_IBI_30sec_byseq.json \
 -epoch_count 1000 \
 -learning_rate 1e-4 \
 -batch_size 32 64 \

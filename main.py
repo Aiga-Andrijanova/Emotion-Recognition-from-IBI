@@ -16,23 +16,27 @@ from sklearn.metrics import f1_score
 parser = argparse.ArgumentParser(add_help=False)
 parser.add_argument('-model', default='Conv2d_Fourier', type=str)
 
-parser.add_argument('-sequence_name', default='grid_search', type=str)
-parser.add_argument('-run_name', default='test', type=str)
+parser.add_argument('-sequence_name', default='Fourier_2C_grid_search', type=str)
+parser.add_argument('-run_name', default='run_4', type=str)
 parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='./data/TEST_AMIGOS_IBI_30sec_byperson.json', type=str)
+parser.add_argument('-dataset_path', default='./data/DREAMER_IBI_30sec_byperson.json', type=str)
+# ./data/DREAMER_IBI_30sec_byperson.json
+# ./data/AMIGOS_IBI_30sec_byseq.json
 
 # Training parameters
 parser.add_argument('-epoch_count', default=100, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
+# 1e-3 3e-3 1e-4 3e-4 1e-5 3e-5
 parser.add_argument('-batch_size', default=32, type=int)
+# 32
 
 # Model parameters
-# parser.add_argument('-embedding_size', default=1, type=int)
-parser.add_argument('-rnn_layers', default=2, type=int)
-# parser.add_argument('-rnn_dropout', default=0, type=int)
-parser.add_argument('-hidden_size', default=153, type=int)
+parser.add_argument('-embedding_size', default=1, type=int)
+parser.add_argument('-rnn_layers', default=1, type=int)
+parser.add_argument('-rnn_dropout', default=0, type=int)
+parser.add_argument('-hidden_size', default=64, type=int)
 
-# parser.add_argument('-kernel_size', default=1, type=int)
+parser.add_argument('-kernel_size', default=1, type=int)
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
 parser.add_argument('-early_stopping_param', default='train_loss', type=str)
@@ -40,6 +44,70 @@ parser.add_argument('-early_stopping_delta_percent', default=1e-3, type=float)
 parser.add_argument('-early_stopping_param_coef', default=1.0, type=float)
 
 args, other_args = parser.parse_known_args()
+
+def validate(model, dataloader_validation, args, loss_func, state, CsvUtils2):
+    stage = 'validation'
+    model.eval()
+
+    metrics = {}
+    for stage in ['validation']:
+        for metric in [
+            'loss',
+            'acc',
+            'F1'
+        ]:
+            metrics[f'{stage}_{metric}'] = 0
+    metrics_epoch = {key: [] for key in metrics.keys()}
+
+    for data_loader in [dataloader_validation]:
+
+        metrics_batch = {key: [] for key in metrics.keys()}
+        conf_matrix = numpy.zeros((args.class_count, args.class_count))
+
+        for x, y, lengths in data_loader:
+
+            if args.is_cuda:
+                y = y.cuda()
+                x = x.cuda()
+
+            y_prim = model.forward(x, lengths)
+
+            loss = loss_func.forward(y_prim, y)
+
+            y_prim_idxes = torch.argmax(y_prim, dim=1)
+            acc = torch.mean((y == y_prim_idxes) * 1.0)
+
+            F1_score = f1_score(y.to('cpu'), y_prim_idxes.to('cpu'), average='micro', zero_division=0)
+
+            metrics_batch[f'{stage}_loss'].append(loss.cpu().item())  # Tensor(0.1) => 0.1f
+            metrics_batch[f'{stage}_acc'].append(acc.cpu().item())
+            metrics_batch[f'{stage}_F1'].append(F1_score)
+
+            for idx, y_prim_idx in enumerate(y_prim_idxes):
+                y_idx = y[idx]
+                conf_matrix[y_idx.item(), y_prim_idx.item()] += 1
+
+        metrics_strs = []
+        for key in metrics_batch.keys():
+            if stage in key:
+                value = np.mean(metrics_batch[key])
+                metrics_epoch[key].append(value)
+                metrics_strs.append(f'{key}: {round(value, 2)}')
+
+        print(f'Validation: {" ".join(metrics_strs)}')
+
+        state['validation_loss'] = metrics_epoch['validation_loss'][-1]
+        state['validation_acc'] = metrics_epoch['validation_acc'][-1]
+        state['validation_F1'] = metrics_epoch['validation_F1'][-1]
+
+        CsvUtils2.add_hparams(
+            path_sequence=path_sequence,
+            run_name=args.run_name,
+            args_dict=args.__dict__,
+            metrics_dict=state,
+            global_step=args.epoch_count + 1
+        )
+
 
 path_sequence = f'./results/{args.sequence_name}'
 args.run_name += ('-' + datetime.utcnow().strftime(f'%y-%m-%d--%H-%M-%S'))
@@ -64,10 +132,7 @@ CsvUtils2.create_global(path_sequence)
 CsvUtils2.create_local(path_sequence, args.run_name)
 
 class DatasetIBI(torch.utils.data.Dataset):
-    def __init__(
-            self,
-            path_data_json: str
-    ):
+    def __init__(self, path_data_json: str, person_split):
         super().__init__()
 
         with open(path_data_json) as fp:
@@ -83,12 +148,13 @@ class DatasetIBI(torch.utils.data.Dataset):
 
         self.data = []
         for idx_sample in range(data_json['shape'][0]):
-            self.data.append([
-                data_mmap[idx_sample],  # (Max_seq_len, )
-                data_json['lengths'][idx_sample],
-                data_json['arousal'][idx_sample],
-                data_json['valence'][idx_sample]]
-            )
+            if data_json['person_id'][idx_sample] in person_split:
+                self.data.append([
+                    data_mmap[idx_sample],  # (Max_seq_len, )
+                    data_json['lengths'][idx_sample],
+                    data_json['arousal'][idx_sample],
+                    data_json['valence'][idx_sample]]
+                )
 
     def __len__(self):
         return len(self.data)
@@ -102,10 +168,24 @@ class DatasetIBI(torch.utils.data.Dataset):
         return t_ibi, t_length, t_valence
 
 
+if 'AMIGOS' in args.dataset_path:
+    test_person_split = [2, 4, 6, 7, 19, 23, 25, 27, 34, 36, 37, 40]
+    train_person_split = [1, 3, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20,
+                          21, 22, 24, 26, 28, 29, 31, 31, 32, 33, 35, 38, 39]
+else:
+    test_person_split = [1, 4, 5, 6, 7, 8, 11]
+    train_person_split = [2, 3, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+                          22, 23]
+
 torch.manual_seed(0)  # lock seed
-dataset_full = DatasetIBI(args.dataset_path)
-dataset_train, dataset_test = torch.utils.data.random_split(
-    dataset_full, lengths=[int(len(dataset_full)*0.8), len(dataset_full)-int(len(dataset_full)*0.8)])
+dataset_train = DatasetIBI(args.dataset_path, person_split=train_person_split)
+dataset_nontrain = DatasetIBI(args.dataset_path, person_split=test_person_split)
+
+test_data_len = int(len(dataset_nontrain) * 0.7)  # ~21% of all data
+valid_data_len = int(len(dataset_nontrain) - test_data_len)  # ~9% of all data
+
+dataset_test, dataset_validation = torch.utils.data.random_split(
+    dataset_nontrain, lengths=[test_data_len, valid_data_len])
 
 torch.manual_seed(int(time.time()))  # init random seed
 
@@ -141,6 +221,13 @@ dataloader_test = torch.utils.data.DataLoader(
     shuffle=False
 )
 
+dataloader_validation = torch.utils.data.DataLoader(
+    dataset_validation,
+    batch_size=args.batch_size,
+    collate_fn=collate_fn,
+    shuffle=False
+)
+
 Model = getattr(__import__('models.' + args.model, fromlist=['Model']), 'Model')
 model = Model(args)
 loss_func = torch.nn.CrossEntropyLoss(weight=VALENCE_WEIGHTS)
@@ -171,7 +258,10 @@ state = {
     'test_acc': -1.0,
     'best_acc': -1.0,
     'train_F1': -1.0,
-    'test_F1': -1.0
+    'test_F1': -1.0,
+    'validation_loss': -1.0,
+    'validation_acc': -1.0,
+    'validation_F1': -1.0,
 }
 
 metrics_epoch = {key: [] for key in metrics.keys()}
@@ -185,6 +275,7 @@ for epoch in range(args.epoch_count):
         if metric_before[args.early_stopping_param] != 0:
             if np.isnan(metric_mean[args.early_stopping_param]) or np.isinf(metric_mean[args.early_stopping_param]):
                 print('loss isnan break')
+                validate(model, dataloader_validation, args, loss_func, state, CsvUtils2)
                 break
 
             percent_improvement = args.early_stopping_param_coef * (
@@ -200,15 +291,21 @@ for epoch in range(args.epoch_count):
                     early_stopping_patience = 0
         if early_stopping_patience > args.early_stopping_patience:
             print('early_stopping_patience break')
+            validate(model, dataloader_validation, args, loss_func, state, CsvUtils2)
             break
 
     for data_loader in [dataloader_train, dataloader_test]:
+
         metrics_batch = {key: [] for key in metrics.keys()}
 
         stage = 'train'
+        model.train()
+
         if data_loader == dataloader_test:
             stage = 'test'
+            model.eval()
 
+        conf_matrix = numpy.zeros((args.class_count, args.class_count))
         for x, y, lengths in data_loader:
 
             if args.is_cuda:
@@ -233,10 +330,10 @@ for epoch in range(args.epoch_count):
             metrics_batch[f'{stage}_acc'].append(acc.cpu().item())
             metrics_batch[f'{stage}_F1'].append(F1_score)
 
-            conf_matrix = numpy.zeros((args.class_count, args.class_count))
-            for idx, y_prim_idx in enumerate(y_prim_idxes):
-                y_idx = y[idx]
-                conf_matrix[y_idx.item(), y_prim_idx.item()] += 1
+            if stage == 'test':
+                for idx, y_prim_idx in enumerate(y_prim_idxes):
+                    y_idx = y[idx]
+                    conf_matrix[y_idx.item(), y_prim_idx.item()] += 1
 
         metrics_strs = []
         for key in metrics_batch.keys():
@@ -257,6 +354,11 @@ for epoch in range(args.epoch_count):
     state['test_acc'] = metrics_epoch['test_acc'][-1]
     state['train_F1'] = metrics_epoch['train_F1'][-1]
     state['test_F1'] = metrics_epoch['test_F1'][-1]
+
+    # state['validation_loss'] = metrics_epoch['validation_loss'][-1]
+    # state['validation_acc'] = metrics_epoch['validation_acc'][-1]
+    # state['validation_F1'] = metrics_epoch['validation_F1'][-1]
+
     if epoch == 0:
         state['best_loss'] = metrics_epoch['test_loss'][-1]
         state['best_acc'] = metrics_epoch['test_acc'][-1]
@@ -295,6 +397,9 @@ for epoch in range(args.epoch_count):
     plt.xlabel('Faktiskā klase')
     plt.ylabel('Piešķirtā klase')
     plt.savefig(f'{path_run}/{epoch}-conf.png')
+    plt.close()
+
+validate(model, dataloader_validation, args, loss_func, state, CsvUtils2)
 
     # plt1 = plt.plot(metrics_epoch['train_loss'], '-b', label='train loss')
     # plt2 = plt.plot(metrics_epoch['train_acc'], '--r', label='train acc')
