@@ -24,7 +24,7 @@ parser.add_argument('-dataset_path', default='./data/DREAMER_IBI_30sec_byperson.
 # ./data/AMIGOS_IBI_30sec_byseq.json
 
 # Training parameters
-parser.add_argument('-epoch_count', default=100, type=int)
+parser.add_argument('-epoch_count', default=3, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
 # 1e-3 3e-3 1e-4 3e-4 1e-5 3e-5
 parser.add_argument('-batch_size', default=32, type=int)

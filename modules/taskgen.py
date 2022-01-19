@@ -25,7 +25,7 @@ parser.add_argument(
 
 parser.add_argument(
     '-template',
-    default='template_loc.sh',
+    default='template_hpc.sh',
     type=str)
 
 parser.add_argument(

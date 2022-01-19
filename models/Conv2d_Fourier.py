@@ -18,8 +18,13 @@ class Model(torch.nn.Module):
         self.linear = torch.nn.Linear(in_features=64, out_features=args.class_count)
 
     def forward(self, x, lengths):
-        x_fourier = torch.stft(x.squeeze(dim=-1), n_fft=20, hop_length=1, win_length=20, return_complex=False)
-        x_fourier = x_fourier.permute(0, 3, 1, 2)
+        # torch 1.6.0:
+        # x_fourier = torch.stft(x.squeeze(dim=-1), n_fft=20, hop_length=1, win_length=20)
+        # x_fourier = x_fourier.permute(0, 3, 1, 2)
+
+        # torch 1.8.0:
+        x_fourier = torch.stft(x.squeeze(dim=-1), n_fft=20, hop_length=1, win_length=20, return_complex=True)
+        x_fourier = torch.view_as_real(x_fourier).permute(0, 3, 1, 2)
 
         conv_out = self.conv1(x_fourier)
         conv_out = FF.leaky_relu(conv_out)

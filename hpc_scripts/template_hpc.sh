@@ -1,8 +1,11 @@
 #!/bin/sh
 module load conda
 eval "$(conda shell.bash hook)"
-conda activate aiga_env
+source activate conda_k40
+export LD_LIBRARY_PATH=~/.conda/envs/conda_k40/lib:$LD_LIBRARY_PATH
+export SDL_AUDIODRIVER=waveout
+export SDL_VIDEODRIVER=x11
 
-cd /mnt/home/abstrac01/aiga_andrijanova/
+ulimit -n 500000
 
-#!/bin/sh
+cd /mnt/home/evaldsu/Documents/emotion_recognition_from_IBI

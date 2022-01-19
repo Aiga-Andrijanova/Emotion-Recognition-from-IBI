@@ -4,3 +4,5 @@
 ViewHR.py
 ViewMemmap.py
 hpc_commands.txt
+*.xml
+*.pyc
