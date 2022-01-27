@@ -14,29 +14,28 @@ import time
 from sklearn.metrics import f1_score
 
 parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument('-model', default='Conv2d_Fourier', type=str)
+parser.add_argument('-model', default='BLSTM_Conv1', type=str)
 
 parser.add_argument('-sequence_name', default='Fourier_2C_grid_search', type=str)
 parser.add_argument('-run_name', default='run_4', type=str)
-parser.add_argument('-is_cuda', default=True, type=lambda x: (str(x).lower() == 'true'))
-parser.add_argument('-dataset_path', default='./data/DREAMER_IBI_30sec_byperson.json', type=str)
+parser.add_argument('-device', default='cpu', type=str)
+parser.add_argument('-dataset_path', default='./data/TEST_AMIGOS_IBI_30sec_byseq.json', type=str)
 # ./data/DREAMER_IBI_30sec_byperson.json
 # ./data/AMIGOS_IBI_30sec_byseq.json
 
 # Training parameters
 parser.add_argument('-epoch_count', default=3, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
-# 1e-3 3e-3 1e-4 3e-4 1e-5 3e-5
-parser.add_argument('-batch_size', default=32, type=int)
-# 32
+parser.add_argument('-batch_size', default=8, type=int)
 
 # Model parameters
 parser.add_argument('-embedding_size', default=1, type=int)
 parser.add_argument('-rnn_layers', default=1, type=int)
-parser.add_argument('-rnn_dropout', default=0, type=int)
-parser.add_argument('-hidden_size', default=64, type=int)
+parser.add_argument('-rnn_dropout', default=0.25, type=float)
+parser.add_argument('-hidden_size', default=8, type=int)
 
 parser.add_argument('-kernel_size', default=1, type=int)
+parser.add_argument('-conv_dropout', default=0.25, type=float)
 
 parser.add_argument('-early_stopping_patience', default=5, type=int)
 parser.add_argument('-early_stopping_param', default='train_loss', type=str)
@@ -66,9 +65,8 @@ def validate(model, dataloader_validation, args, loss_func, state, CsvUtils2):
 
         for x, y, lengths in data_loader:
 
-            if args.is_cuda:
-                y = y.cuda()
-                x = x.cuda()
+            y = y.to(args.device)
+            x = x.to(args.device)
 
             y_prim = model.forward(x, lengths)
 
@@ -161,7 +159,7 @@ class DatasetIBI(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         ibi, length, arousal, valance = self.data[idx]
-        t_ibi = torch.FloatTensor(ibi)
+        t_ibi = torch.FloatTensor(ibi.copy())
         t_length = torch.IntTensor([length])
         # t_arousal = torch.IntTensor([arousal])
         t_valence = torch.IntTensor([valance])
@@ -233,9 +231,8 @@ model = Model(args)
 loss_func = torch.nn.CrossEntropyLoss(weight=VALENCE_WEIGHTS)
 optimizer = optim.RAdam(model.parameters(), lr=args.learning_rate)
 
-if args.is_cuda:
-    model = model.cuda()
-    loss_func = loss_func.cuda()
+model = model.to(args.device)
+loss_func = loss_func.to(args.device)
 
 metrics = {}
 for stage in ['train', 'test']:
@@ -308,9 +305,8 @@ for epoch in range(args.epoch_count):
         conf_matrix = numpy.zeros((args.class_count, args.class_count))
         for x, y, lengths in data_loader:
 
-            if args.is_cuda:
-                y = y.cuda()
-                x = x.cuda()
+            y = y.to(args.device)
+            x = x.to(args.device)
 
             y_prim = model.forward(x, lengths)
 
@@ -379,10 +375,10 @@ for epoch in range(args.epoch_count):
     plt.clf()
     plt.figure(figsize=(6, 7))
     plt.tight_layout()
-    plt.tight_layout(f'conf_matrix epoch: {epoch}')
+    plt.title(f'conf_matrix epoch: {epoch}')
     plt.imshow(conf_matrix.transpose(), interpolation='nearest', cmap=plt.get_cmap('Greys'))
-    titles_x = np.arange(args.class_count).astype(np.int)
-    titles_y = np.arange(args.class_count).astype(np.int)
+    titles_x = np.arange(args.class_count).astype(int)
+    titles_y = np.arange(args.class_count).astype(int)
     for i in range(len(titles_y)):
         for j in range(len(titles_y)):
             plt.annotate(
