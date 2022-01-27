@@ -38,14 +38,27 @@ class Model(torch.nn.Module):
 
         max_seq_len = args.max_seq_len
 
-        self.conv1 = torch.nn.Conv1d(in_channels=max_seq_len, out_channels=64, kernel_size=1)
-        torch.nn.init.kaiming_normal_(self.conv1.weight)  # aka He normal
-        self.conv2 = torch.nn.Conv1d(in_channels=64, out_channels=128, kernel_size=1)
-        torch.nn.init.kaiming_normal_(self.conv2.weight)
-        self.conv3 = torch.nn.Conv1d(in_channels=128, out_channels=256, kernel_size=1)
-        torch.nn.init.kaiming_normal_(self.conv3.weight)
-        self.conv4 = torch.nn.Conv1d(in_channels=256, out_channels=96, kernel_size=1)
-        torch.nn.init.kaiming_normal_(self.conv4.weight)
+        self.conv = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=1, out_channels=4, kernel_size=3),
+            torch.nn.Dropout(p=args.conv_dropout),  # FF.dropout(training=True) in forward
+            torch.nn.ReLU(),
+
+            torch.nn.Conv1d(in_channels=4, out_channels=8, kernel_size=3),
+            torch.nn.Dropout(p=args.conv_dropout),
+            torch.nn.ReLU(),
+
+            torch.nn.Conv1d(in_channels=8, out_channels=16, kernel_size=3),
+            torch.nn.Dropout(p=args.conv_dropout),
+            torch.nn.ReLU(),
+
+            torch.nn.Conv1d(in_channels=16, out_channels=96, kernel_size=3),
+            torch.nn.Dropout(p=args.conv_dropout),
+            torch.nn.ReLU()
+        )
+
+        for name, param in self.conv.named_parameters():
+            if 'weight' in name:
+                torch.nn.init.kaiming_normal_(param)  # aka He normal
 
         #L_out = ((L_in + 2P - D * (K-1) - 1) / S) + 1
 
@@ -71,7 +84,7 @@ class Model(torch.nn.Module):
         # max_seq_len = unpacked_rnn_out.size(1)
         hidden_size = unpacked_rnn_out.size(2)
 
-        h = torch.zeros((batch_size, hidden_size*3)).cuda()
+        h = torch.zeros((batch_size, hidden_size*3))
         # (B, F)
         for idx_sample in range(batch_size):
             len_sample = unpacked_rnn_out_lengths[idx_sample]
@@ -80,14 +93,8 @@ class Model(torch.nn.Module):
             h[idx_sample, hidden_size:hidden_size * 2] = torch.max(h_sample, axis=0).values
             h[idx_sample, hidden_size * 2:hidden_size * 3] = h_sample[-1]
 
-        conv_out = self.conv1(x)
-        conv_out = FF.relu(conv_out)
-        conv_out = self.conv2(conv_out)
-        conv_out = FF.relu(conv_out)
-        conv_out = self.conv3(conv_out)
-        conv_out = FF.relu(conv_out)
-        conv_out = self.conv4(conv_out)
-        conv_out = FF.relu(conv_out)
+        x = x.squeeze(dim=-1).unsqueeze(dim=1)
+        conv_out = self.conv(x)
         conv_out = FF.avg_pool1d(conv_out, kernel_size=conv_out.shape[-1])  # output => (B, F, 1)
 
         out = torch.cat((conv_out.squeeze(dim=2), h), 1)
