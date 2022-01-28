@@ -2,6 +2,7 @@
 /artifacts
 /data
 /datasets
+.DS_Store
 ViewHR.py
 ViewMemmap.py
 hpc_commands.txt
