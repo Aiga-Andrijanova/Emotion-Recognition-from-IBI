@@ -1,6 +1,6 @@
 /results
 /artifacts
-/data
+/data_processed_full
 /datasets
 .DS_Store
 ViewHR.py
