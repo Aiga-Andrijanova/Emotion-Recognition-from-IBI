@@ -18,40 +18,52 @@ class DatasetUtils():
         return feature_weights, class_count
 
     @staticmethod
-    def normalization_minmax_by_sample(memmap_path, shape):
+    def normalization_minmax_by_sample(memmap_path, shape, range_min=0, range_max=1.0):
         # Normalizes data by each sample for AMIGOS
 
         memmap_file = np.memmap(memmap_path, dtype='float16',
                                 mode='r+', shape=shape)
         max_seq_len = memmap_file.shape[1]
+        eps = 1e-8
 
         for i in range(len(memmap_file)-1):
-            max = np.max(memmap_file[i])
-            min = np.min(memmap_file[i, np.nonzero(memmap_file[i])])
+            data_max = np.max(memmap_file[i])
+            data_min = np.min(memmap_file[i, np.nonzero(memmap_file[i])])
 
-            delta = max - min
-            for j in range(max_seq_len):
-                if memmap_file[i, j] != 0:
-                    memmap_file[i, j] = (memmap_file[i, j] - min) / delta
+            delta = data_max - data_min
+            # for j in range(max_seq_len):
+            #     if memmap_file[i, j] != 0:
+            #         memmap_file[i, j] = (memmap_file[i, j] - data_min) / (delta + eps) \
+            #                             * (range_max - range_min) + range_min
+            memmap_file[i, :max_seq_len] = (memmap_file[i, :max_seq_len] - data_min) / (delta + eps) \
+                                           * (range_max - range_min) + range_min
             memmap_file.flush()
 
     @staticmethod
-    def normalization_minmax_by_person(memmap_path, shape, people):
-        # Normalizes data by each person for AMIGOS
+    def normalization_minmax_by_person(memmap_path, shape, person_ids, range_min=0, range_max=1.0):
+        # Normalizes data by each person, assumes that data is ordered by person
 
         memmap_file = np.memmap(memmap_path, dtype='float16',
                                 mode='r+', shape=shape)
         max_seq_len = memmap_file.shape[1]
+        eps = 1e-8
 
-        person = 0
-        for i in range(len(memmap_file) - 1):
-            if person != people[i]:
-                max = np.max(memmap_file[i])
-                min = np.min(memmap_file[i, np.nonzero(memmap_file[i])])
-                delta = max - min
-                person = people[i]
+        person_ids.reverse()
+        person_count = person_ids[0]
+        person_change_idx = []
+        for person in range(1,person_count):
+            person_change_idx.append(person_ids.index(person))
+        person_change_idx.append(0)
+        person_change_idx.reverse()
 
-            for j in range(max_seq_len):
-                if memmap_file[i, j] != 0:
-                    memmap_file[i, j] = (memmap_file[i, j] - min) / delta
+        for person in range(1, len(person_change_idx)-1):
+            start_idx = person_change_idx[person-1]
+            end_idx = person_change_idx[person]
+
+            data_max = np.max(memmap_file[start_idx:end_idx])
+            data_min = np.min(memmap_file[start_idx:end_idx])
+            delta = data_max - data_min
+
+            memmap_file[start_idx:end_idx, :max_seq_len] = (memmap_file[start_idx:end_idx, :max_seq_len] - data_min) / \
+                                                           (delta + eps) * (range_max - range_min) + range_min
             memmap_file.flush()
