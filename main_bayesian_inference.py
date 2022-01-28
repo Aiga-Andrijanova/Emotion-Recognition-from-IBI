@@ -19,7 +19,7 @@ parser.add_argument('-model', default='BLSTM_Conv1', type=str)
 parser.add_argument('-sequence_name', default='BLSTM_Conv1_Bayes_grid_search', type=str)
 parser.add_argument('-run_name', default='', type=str)
 parser.add_argument('-device', default='cpu', type=str)
-parser.add_argument('-dataset_path', default='./data/TEST_AMIGOS_IBI_30sec_byseq.json', type=str)
+parser.add_argument('-dataset_path', default='./data_processed_full/AMIGOS_IBI_30sec_2C_AllVideos_minmax_byperson.json', type=str)
 
 # Training parameters
 parser.add_argument('-epoch_count', default=3, type=int)
@@ -345,6 +345,7 @@ for epoch in range(args.epoch_count):
 
             mean = torch.mean(y_prims, dim=0)
             std = torch.std(y_prims, dim=0)
+            a=10
 
             # conf_matrix = numpy.zeros((args.class_count, args.class_count))
             # for idx, y_prim_idx in enumerate(y_prim_idxes):
