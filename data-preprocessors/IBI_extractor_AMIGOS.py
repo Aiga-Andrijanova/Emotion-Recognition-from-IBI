@@ -17,8 +17,8 @@ parser.add_argument('-INCLUDE_LONG_VIDEOS', default=True, type=bool)  # 0-15 sho
 parser.add_argument('-SLIDING_WINDOW', default=30, type=int)  # one sample len
 parser.add_argument('-TIMESTEP', default=1, type=int)
 parser.add_argument('-MAX_SEQ_LEN', default=61, type=int)  # 61 - derived from histograms
-parser.add_argument('-NORMALIZATION_TYPE', default='minmax', type=str)  # [minmax; standart_score]
-parser.add_argument('-NORMALIZATION_SCOPE', default='byperson', type=str)  # [byperson; byseq; dataset]
+parser.add_argument('-NORMALIZATION_TYPE', default='minmax', type=str)  # [minmax; standard_score]
+parser.add_argument('-NORMALIZATION_SCOPE', default='byperson', type=str)  # [byperson; byseq]
 args, other_args = parser.parse_known_args()
 
 # There are 20 videos in the dataset, 0-15 short videos (3-4 min), 16-19 long (approx 40-60 min)
@@ -152,6 +152,23 @@ if args.NORMALIZATION_TYPE == 'minmax':
             memmap_path=mmap_path,
             shape=tuple([len(lengths), args.MAX_SEQ_LEN]),
             person_ids=person_id
+        )
+    elif args.NORMALIZATION_SCOPE == 'byseq':
+        DatasetUtils.normalization_minmax_by_sample(
+            memmap_path=mmap_path,
+            shape=tuple([len(lengths), args.MAX_SEQ_LEN])
+        )
+elif args.NORMALIZATION_TYPE == 'standard_score':
+    if args.NORMALIZATION_SCOPE == 'byperson':
+        DatasetUtils.normalization_standard_score_by_person(
+            memmap_path=mmap_path,
+            shape=tuple([len(lengths), args.MAX_SEQ_LEN]),
+            person_ids=person_id
+        )
+    elif args.NORMALIZATION_SCOPE == 'byseq':
+        DatasetUtils.normalization_standard_score_by_sample(
+            memmap_path=mmap_path,
+            shape=tuple([len(lengths), args.MAX_SEQ_LEN])
         )
 # DATA NORMALIZATION
 
