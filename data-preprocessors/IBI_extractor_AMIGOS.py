@@ -17,8 +17,8 @@ parser.add_argument('-INCLUDE_LONG_VIDEOS', default=True, type=bool)  # 0-15 sho
 parser.add_argument('-SLIDING_WINDOW', default=30, type=int)  # one sample len
 parser.add_argument('-TIMESTEP', default=1, type=int)
 parser.add_argument('-MAX_SEQ_LEN', default=61, type=int)  # 61 - derived from histograms
-parser.add_argument('-NORMALIZATION_TYPE', default='minmax', type=str)  # [minmax; standard_score]
-parser.add_argument('-NORMALIZATION_SCOPE', default='byseq', type=str)  # [byperson; byseq]
+parser.add_argument('-NORMALIZATION_TYPE', default='standard_score', type=str)  # [minmax; standard_score]
+parser.add_argument('-NORMALIZATION_SCOPE', default='byperson', type=str)  # [byperson; byseq]
 args, other_args = parser.parse_known_args()
 
 # There are 20 videos in the dataset, 0-15 short videos (3-4 min), 16-19 long (approx 40-60 min)

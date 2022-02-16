@@ -15,7 +15,7 @@ parser.add_argument('-CLASS_COUNT', default=2, type=int)  # [2]
 parser.add_argument('-SLIDING_WINDOW', default=30, type=int)
 parser.add_argument('-TIMESTEP', default=1, type=int)
 parser.add_argument('-MAX_SEQ_LEN', default=55, type=int)  # 55 for 30 sec / 38 for 20 sec / 19 for 10 sec
-parser.add_argument('-NORMALIZATION_TYPE', default='minmax', type=str)  # [minmax; standard_score]
+parser.add_argument('-NORMALIZATION_TYPE', default='standard_score', type=str)  # [minmax; standard_score]
 parser.add_argument('-NORMALIZATION_SCOPE', default='byperson', type=str)  # [byperson; byseq]
 args, other_args = parser.parse_known_args()
 
@@ -27,7 +27,7 @@ lengths = []
 mmap_path = args.OUTPUT_PATH \
             + f'DREAMER_IBI_{args.SLIDING_WINDOW}sec_{args.CLASS_COUNT}C_' \
               f'{args.NORMALIZATION_TYPE}_{args.NORMALIZATION_SCOPE}.mmap'
-memmap_file = np.memmap(args.MEMMAP_PATH, dtype='float16', mode='w+', shape=(1,))
+memmap_file = np.memmap(mmap_path, dtype='float16', mode='w+', shape=(1,))
 memmap_file.flush()
 memmap_idx = 0
 
@@ -101,7 +101,7 @@ for participant in range(0, 23):  # 23 participants
                 else:
                     break
 
-            memmap_file = np.memmap(args.MEMMAP_PATH, dtype='float16',
+            memmap_file = np.memmap(mmap_path, dtype='float16',
                                     mode='r+', shape=(args.MAX_SEQ_LEN,), offset=2 * memmap_idx)
 
             j = 0
