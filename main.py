@@ -14,19 +14,19 @@ import time
 from sklearn.metrics import f1_score
 
 parser = argparse.ArgumentParser(add_help=False)
-parser.add_argument('-model', default='BLSTM_Conv1', type=str)
+parser.add_argument('-model', default='LSTM_V2', type=str)
 
 parser.add_argument('-sequence_name', default='Fourier_2C_grid_search', type=str)
 parser.add_argument('-run_name', default='run_4', type=str)
 parser.add_argument('-device', default='cpu', type=str)
-parser.add_argument('-dataset_path', default='./data/TEST_AMIGOS_IBI_30sec_byseq.json', type=str)
+parser.add_argument('-dataset_path', default='./data_processed_full/AMIGOS_IBI_30sec_2C_AllVideos_minmax_byperson.json', type=str)
 # ./data/DREAMER_IBI_30sec_byperson.json
 # ./data/AMIGOS_IBI_30sec_byseq.json
 
 # Training parameters
 parser.add_argument('-epoch_count', default=3, type=int)
 parser.add_argument('-learning_rate', default=1e-4, type=float)
-parser.add_argument('-batch_size', default=8, type=int)
+parser.add_argument('-batch_size', default=4, type=int)
 
 # Model parameters
 parser.add_argument('-embedding_size', default=1, type=int)

@@ -25,12 +25,16 @@ python taskgen.py \
 -num_tasks_in_parallel 8 \
 -model BLSTM_Conv1 \
 -dataset_path \
-./data/DREAMER_IBI_30sec_byseq.json \
-./data/AMIGOS_IBI_30sec_byseq.json \
-./data/DREAMER_IBI_30sec_byperson.json \
-./data/AMIGOS_IBI_30sec_byperson.json \
--epoch_count 250 \
--learning_rate 1e-3 3e-3 1e-4 3e-4 1e-5 3e-5 \
--batch_size 64 128 256 \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/DREAMER_IBI_30sec_2C_standard_score_byseq.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/DREAMER_IBI_30sec_2C_standard_score_byperson.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/DREAMER_IBI_30sec_2C_minmax_byseq.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/DREAMER_IBI_30sec_2C_minmax_byperson.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/AMIGOS_IBI_30sec_2C_AllVideos_standard_score_byseq.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/AMIGOS_IBI_30sec_2C_AllVideos_standard_score_byperson.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/AMIGOS_IBI_30sec_2C_AllVideos_minmax_byseq.json \
+/mnt/home/evaldsu/Documents/emotion_recognition_from_IBI/data/AMIGOS_IBI_30sec_2C_AllVideos_minmax_byperson.json \
+-epoch_count 100 \
+-learning_rate 3e-3 \
+-batch_size 256 \
 -rnn_layers 1 2 3 4 5 \
 -hidden_size 64 128 256
